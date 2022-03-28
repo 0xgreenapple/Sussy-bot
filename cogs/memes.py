@@ -380,6 +380,7 @@ class fun(commands.Cog):
 
 
                 await ctx.send(file=discord.File("comrade.gif"))
+                logging.warning("hello world")
 
             elif resp.status_code != 200:
                 jsonresp = resp.json()
