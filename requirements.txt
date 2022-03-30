@@ -1,9 +1,8 @@
-git+https://github.com/Rapptz/discord.py@rewrite
 aiohttp==3.7.4.post0
+discord.py
+discord
 aiosignal==1.2.0
 async-timeout==3.0.1
-discord==1.7.3
-discord.py==1.7.3
 dnspython==1.16.0
 python-dotenv==0.19.2
 pandas
