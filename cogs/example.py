@@ -10,24 +10,10 @@ class Modcommands(commands.Cog):
     def __init__(self, client):
         self.client = client
 
-    def is_it_me(self, ctx):
-        return ctx.guild.id == 946345220625277030
 
-    '''@commands.cog.listener()
-    async def on_ready(self):
-        print("bot is online")
-        await client.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name='imhrs'))'''
 
-    '''@commands.command()
-    async def timeout_user(self,*, user_id: int, guild_id: int, until):
-        headers = {"Authorization": f"Bot {self.client.http.token}"}
-        url = f"https://discord.com/api/v9/guilds/{guild_id}/members/{user_id}"
-        timeout = (datetime.datetime.utcnow() + datetime.timedelta(minutes=until)).isoformat()
-        json = {'communication_disabled_until': timeout}
-        async with self.client.session.patch(url, json=json, headers=headers) as session:
-            if session.status in range(200, 299):
-                return True
-            return False'''
+
+
 
 
     @commands.command(description="clear messages")
@@ -52,9 +38,24 @@ class Modcommands(commands.Cog):
         await ctx.guild.ban(member)
         await ctx.channel.send(f'User {member.mention} has been banned for {reason}')
 
+    @commands.command(description="unban a random user")
+    @commands.has_permissions(administrator=True)
+    async def unban(self, ctx, *, member):
+        banned_users = await ctx.guild.bans()
+        member_name, member_discriminator = member.split("#")
+
+        for ban_entry in banned_users:
+            user = ban_entry.user
+
+            if (user.name, user.discriminator) == (member_name, member_discriminator):
+                await ctx.guild.unban(user)
+                await ctx.channel.send(f'Unbanned {user.mention}')
+                return
+
 
 
 #==========================================================================
+
     '''@commands.command(description="ban a random user")
     @commands.has_permissions(ban_members=True)
     async def timeout(self, ctx, member: discord.Member, *, reason=None):
@@ -104,7 +105,7 @@ class Modcommands(commands.Cog):
 
 
 
-    @commands.command(description="unban a random user")
+    '''@commands.command(description="unban a random user")
     @commands.has_permissions(administrator=True)
     async def unban(self,ctx, *, member):
         banned_users = await ctx.guild.bans()
@@ -116,7 +117,7 @@ class Modcommands(commands.Cog):
             if (user.name, user.discriminator) == (member_name, member_discriminator):
                 await ctx.guild.unban(user)
                 await ctx.channel.send(f'Unbanned {user.mention}')
-                return
+                return'''
 
 
 

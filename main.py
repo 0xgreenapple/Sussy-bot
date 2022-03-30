@@ -6,8 +6,9 @@ from itertools import cycle
 
 
 client = commands.Bot(command_prefix='$')
+client.remove_command("help")
 
-status = cycle(['amongus','SUS','0_0','ur mom'])
+status = cycle(['amongus','SUS','0_0','ur mom','0-0'])
 
 
 @client.command()
@@ -29,7 +30,7 @@ async def on_ready():
     print(f"{client.user.display_name} is online")
     '''await client.change_presence(activity = discord.Activity(type = discord.ActivityType.watching,name = 'SUS'))'''
 
-@tasks.loop(seconds=1200)
+@tasks.loop(seconds=3600)
 async def change_status():
     await client.change_presence(activity=discord.Game(next(status)))
 
@@ -60,6 +61,8 @@ async def on_message(message):
         await message.channel.send(f"```py\n{sussyserver_guild.member_count}```")
     await client.process_commands(message)
 '''end '''
+
+
 
 token = os.environ['TOKEN']
 client.run(token)

@@ -14,7 +14,7 @@ class error(commands.Cog):
         """A global error handler cog."""
 
         if isinstance(error, commands.CommandNotFound):
-            return  # Return because we don't want to show an error for every command not found
+            message = "https://tenor.com/view/pixelplace-gif-24586548"
         elif isinstance(error, commands.CommandOnCooldown):
             message = f"This command is on cooldown. Please try again after {round(error.retry_after, 1)} seconds."
         elif isinstance(error, commands.MissingPermissions):
@@ -22,11 +22,13 @@ class error(commands.Cog):
         elif isinstance(error, commands.UserInputError):
             message = "Something about your input was wrong, please check your input and try again!"
         else:
-            message = "Oh no! Something went wrong while running the command!"
+            message = "fucking what just happend"
 
         await ctx.message.add_reaction("🚫")
         await ctx.send(message, delete_after=5)
         await ctx.message.delete(delay=10)
+
+
 
 
 def setup(client):

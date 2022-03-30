@@ -1,6 +1,4 @@
 import discord
-import aiohttp
-import random
 import datetime
 from discord.ext import commands
 
@@ -28,7 +26,7 @@ class general(commands.Cog):
 
     @commands.command(description="do ping to get bot infromation")
     async def ping(self,ctx):
-        embed11 = discord.Embed(title="pong! 🏓 latency is "f"{round(self.client.latency * 1000)} ms",description="",url="", colour=discord.Colour.red())
+        embed11 = discord.Embed(title="pong! 🏓 latency is "f"{round(self.client.latency * 1000)}ms",description="",url="", colour=discord.Colour.red())
         await ctx.message.add_reaction("🏓")
         await ctx.send(embed=embed11)
 
@@ -50,12 +48,17 @@ class general(commands.Cog):
     @commands.command(description="get a user avatar")
     async def avatar(self, ctx, member: discord.Member = None):
         if member is None:
-            await ctx.send_message("Invalid user!")
-
-        embed9 = discord.Embed(title=member.display_name, description="", url=member.avatar_url, colour=discord.Colour.blue())
-        embed9.set_image(url=member.avatar_url)
-        await ctx.message.add_reaction("✅")
-        await ctx.send(embed=embed9)
+            embed10 = discord.Embed(title=ctx.message.author.display_name, description="", url=ctx.message.author.avatar_url,
+                                   colour=discord.Colour.blue())
+            embed10.set_image(url=ctx.message.author.avatar_url)
+            await ctx.message.add_reaction("✅")
+            await ctx.send(embed=embed10)
+            return
+        else:
+            embed9 = discord.Embed(title=member.display_name, description="", url=member.avatar_url, colour=discord.Colour.blue())
+            embed9.set_image(url=member.avatar_url)
+            await ctx.message.add_reaction("✅")
+            await ctx.send(embed=embed9)
 
 
     @commands.command(description= "get list of all commands")
