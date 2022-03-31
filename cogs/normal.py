@@ -90,6 +90,6 @@ class general(commands.Cog):
         await ctx.send(embed=embed)
         await ctx.send(embed=embed2)
 
-
+"l"
 def setup(client):
     client.add_cog(general(client))
