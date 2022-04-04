@@ -21,6 +21,12 @@ class Modcommands(commands.Cog):
     async def clear(self, ctx, amount=5):
         await ctx.channel.purge(limit=amount)
 
+    @clear.error
+    async def clear_error(self, ctx , error):
+        if isinstance(error , commands.MissingPermissions):
+            embed = discord.Embed(title="you are missing permisiion ``kick members`` | you are retard")
+            await ctx.send(embed = embed)
+
 
     @commands.command(description="kick a random user")
     @commands.has_permissions(kick_members=True)

@@ -9,7 +9,7 @@ class error(commands.Cog):
         self.client = client
 
 
-    @commands.Cog.listener()
+    '''@commands.Cog.listener()
     async def on_command_error(self, ctx: commands.Context, error: commands.CommandError):
         """A global error handler cog."""
 
@@ -21,12 +21,18 @@ class error(commands.Cog):
             message = "You are missing the required permissions to run this command!"
         elif isinstance(error, commands.UserInputError):
             message = "Something about your input was wrong, please check your input and try again!"
+        elif isinstance(error, commands.NotOwner):
+            message = "you dont own me but your mom"
+        elif isinstance(error,  commands.BotMissingPermissions):
+            message = "i m missing some permissions"
+        elif isinstance(error,  commands.UserNotFound):
+            message = "try pinging your mom !"
         else:
             message = "fucking what just happend"
 
         await ctx.message.add_reaction("🚫")
         await ctx.send(message, delete_after=5)
-        await ctx.message.delete(delay=10)
+        await ctx.message.delete(delay=10)'''
 
 
 

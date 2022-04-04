@@ -37,9 +37,10 @@ class info(commands.Cog):
 
     def is_it_me(self, ctx):
         return ctx.guild.id == 917471209329946695
-    @commands.command(description = "get rules")
+    @commands.command(description = "get rules",)
     async def rules(self,ctx):
-        whole_rules = disc.Embed(title="rules",description="list of rules\n"
+
+        whole_rules = discord.Embed(title="rules",description="list of rules\n"
                                                               "infromation based on discord tos https://discord.com/terms",colour=discord.Colour.red())
 
         #rules1
@@ -82,8 +83,10 @@ class info(commands.Cog):
                                  moderation for staff teams",inline=False)
 
         #whole_rules.set_footer(text="infromation based on discord tos https://discord.com/terms",icon_url="https://support.discord.com/hc/article_attachments/360052376732/discord_security_shield.png")
-
-        await ctx.send(embed=whole_rules)
+        if ctx.guild.id != 917471209329946695:  # This is the wanted guild id
+            return
+        else:
+            await ctx.send(embed=whole_rules)
 
 
 

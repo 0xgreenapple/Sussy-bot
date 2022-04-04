@@ -116,7 +116,7 @@ class image(commands.Cog):
                 data = await response.json()
                 joke = data["joke"]
                 embed3 = discord.Embed(title="", description=f"**{joke}**", colour=discord.Colour.random())
-                await ctx.send("amongus ",delay=10)
+                await ctx.send("amongus ")
                 await ctx.message.add_reaction("✅")
                 await ctx.send(embed=embed3)
                 await ctx.message.clear_reaction("✅")
@@ -438,6 +438,30 @@ class image(commands.Cog):
         else:
             await ctx.send("**fucking give me a colour code**")
             return
+
+    @commands.command(description="get a user comrade")
+    async def wiki(self, ctx, *,search=None):
+        try:
+            search_url = None
+            if search != None:
+                search = search.replace(' ', '_')
+                logging.warning(search)
+
+                search_url = f"https://en.wikipedia.org/w/api.php?action=opensearch&search={search}&limit=1"
+                logging.warning(search_url)
+            else:
+                await ctx.send("``your mom``")
+
+            async with aiohttp.ClientSession() as cs:
+                async with cs.get(search_url) as r:
+                    res = await r.json()
+                    logging.warning(res[3][0])
+                    await ctx.send(res[3][0])
+
+        except IndexError:
+            await ctx.send(f"``there is no page called {search}``")
+
+
 
 
 
