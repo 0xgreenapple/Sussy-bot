@@ -69,7 +69,8 @@ class mybot(commands.Bot):
     async def setup_hook(self):
         """this code load the cogs and commands files"""
         self.add_view(PersistentView())
-        COGS = ["normal","randomapi"]
+        COGS = ["normal"
+            ,"randomapi"]
         for cog in COGS:
             await self.load_extension(f"cogs.{cog}")
             await bot.tree.sync()

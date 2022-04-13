@@ -1,5 +1,5 @@
 aiohttp==3.7.4.post0
-discord.py==2.0.0a4070+g723584c
+git+https://github.com/Rapptz/discord.py
 discord
 aiosignal==1.2.0
 async-timeout==3.0.1
