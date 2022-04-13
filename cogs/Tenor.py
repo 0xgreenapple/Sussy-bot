@@ -8,10 +8,9 @@ from discord.ext import commands
 
 
 
-class gif(commands.Cog):
-
-    def __init__(self, client):
-        self.client = client
+class Tenor(commands.Cog):
+    def __init__(self, bot: commands.Bot) -> None:
+        self.bot = bot
 
     @commands.command(pass_context=True)
     async def gif(self, ctx, *, message=None):
@@ -34,7 +33,6 @@ class gif(commands.Cog):
 
                 await ctx.message.add_reaction("✅")
                 await ctx.send(final_image)
-
-def setup(client):
-    client.add_cog(gif(client))
-
+async def setup(bot: commands.Bot ) -> None:
+    await bot.add_cog(
+        Tenor(bot))

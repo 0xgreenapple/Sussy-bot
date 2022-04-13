@@ -2,30 +2,50 @@ import discord
 import datetime
 import warnings
 from discord.ext import commands, tasks
+from discord import app_commands
 
 
 
-class Modcommands(commands.Cog):
-
-    def __init__(self, client):
-        self.client = client
-
+class example(commands.Cog):
+    def __init__(self, bot: commands.Bot) -> None:
+        self.bot = bot
 
 
 
 
 
 
-    @commands.command(description="clear messages")
+
+
+    @app_commands.command(name="clean", description="clear messages")
+    @app_commands.checks.has_permissions(manage_messages = True)
+    @app_commands.checks.cooldown(1,5, key=lambda j:(j.guild_id,j.user.id))
+    async def clearcommand(self, interaction: discord.Interaction,amount : int = 5):
+        await interaction.channel.purge(limit=amount)
+        await interaction.response.defer( ephemeral= True)
+        await interaction.followup.send(f"{amount} message deleted from channel succesfully",)
+
+
+
+    @clearcommand.error
+    async def clearcommand_error(self, interaction : discord.Interaction, error: app_commands.AppCommandError):
+        if isinstance(error ,app_commands.MissingPermissions):
+            await interaction.response.send_message("your mom, go and get some permissions first", ephemeral= True)
+        elif isinstance(error ,app_commands.CommandOnCooldown):
+            await interaction.response.send_message(f"{error}", ephemeral= True)
+        else:
+            await interaction.response.send_message(f"something wen wrong do $help for help $bugs for reporting a bug", ephemeral=True)
+
+
+
+    @commands.command()
     @commands.has_permissions(kick_members=True)
-    async def clear(self, ctx, amount=5):
-        await ctx.channel.purge(limit=amount)
+    async def clear(self,ctx, amount=5):
+        await ctx.channel.purge(limit = amount)
 
-    @clear.error
-    async def clear_error(self, ctx , error):
-        if isinstance(error , commands.MissingPermissions):
-            embed = discord.Embed(title="you are missing permisiion ``kick members`` | you are retard")
-            await ctx.send(embed = embed)
+
+
+
 
 
     @commands.command(description="kick a random user")
@@ -44,6 +64,9 @@ class Modcommands(commands.Cog):
         await ctx.guild.ban(member)
         await ctx.channel.send(f'User {member.mention} has been banned for {reason}')
 
+
+
+
     @commands.command(description="unban a random user")
     @commands.has_permissions(administrator=True)
     async def unban(self, ctx, *, member):
@@ -58,6 +81,13 @@ class Modcommands(commands.Cog):
                 await ctx.channel.send(f'Unbanned {user.mention}')
                 return
 
+    @commands.command(aliases = ["gl"])
+    @commands.is_owner()
+    async def guild_leave(self, ctx ,guildid):
+        guild = await self.client.fetch_guild(int(guildid))
+        await guild.leave()
+        embed = discord.Embed(title=f"i left the guild {guild.name} ")
+        await ctx.send(embed = embed)
 
 
 #==========================================================================
@@ -128,5 +158,6 @@ class Modcommands(commands.Cog):
 
 
 
-def setup(client):
-    client.add_cog(Modcommands(client))
+async def setup(bot: commands.Bot ) -> None:
+    await bot.add_cog(
+        example(bot))

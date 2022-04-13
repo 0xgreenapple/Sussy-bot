@@ -37,6 +37,6 @@ class trivia(commands.Cog):
 
 
 
-def setup(client):
-    client.add_cog(trivia(client))
+async def setup(bot):
+    await bot.add_cog(trivia(bot))
 

@@ -70,6 +70,5 @@ class calc(commands.Cog):
 
 
 
-
-def setup(client):
-    client.add_cog(calc(client))
+async def setup(bot):
+    await bot.add_cog(calc(bot))

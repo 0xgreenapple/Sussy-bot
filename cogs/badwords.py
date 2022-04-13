@@ -46,5 +46,5 @@ class bad(commands.Cog):
 
 
 
-def setup(client):
-    client.add_cog(bad(client))
+async def setup(bot):
+    await bot.add_cog(bad(bot))

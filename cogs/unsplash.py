@@ -9,11 +9,9 @@ from requests import get
 from discord.ext import commands
 
 
-
 class unsplash(commands.Cog):
-
-    def __init__(self, client):
-        self.client = client
+    def __init__(self, bot: commands.Bot) -> None:
+        self.bot = bot
 
     @commands.command(pass_context=True)
     @cooldown(1 , 10 , BucketType.user)
@@ -52,8 +50,7 @@ class unsplash(commands.Cog):
 
 
 
-
-def setup(client):
-    client.add_cog(unsplash(client))
-
+async def setup(bot: commands.Bot ) -> None:
+    await bot.add_cog(
+        unsplash(bot))
 

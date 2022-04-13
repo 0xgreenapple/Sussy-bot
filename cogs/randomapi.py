@@ -5,23 +5,21 @@ import aiohttp
 import random
 from requests import get
 from discord.ext import commands
+from discord import app_commands
+from discord.ui import Button , View
+from discord.ext.commands import cooldown , BucketType
+from discord.app_commands import Choice
+from typing import Optional
 
 
+class randomapi(commands.Cog):
+    def __init__(self, bot: commands.Bot) -> None:
+        self.bot = bot
 
-class image(commands.Cog):
+    """all random apis here"""
 
-    def __init__(self, client):
-        self.client = client
+    #give a random animal fact with image
 
-
-
-                                  #apis from random api ml.com
-
-
-#random api ml animals command ========================================================================
-
-
-#give a random animal fact with image
     @commands.command()
     async def animalfacts(self, ctx):
         async with aiohttp.ClientSession() as session:
@@ -40,12 +38,66 @@ class image(commands.Cog):
                 await ctx.send(embed=embed2)
                 await ctx.message.clear_reaction("✅")
 
+    #give a random animal image
+    @app_commands.command(name="animals", description="get a random animal photos")
+    @app_commands.checks.cooldown(1, 5, key=lambda j: (j.guild_id, j.user.id))
+    async def animalslash(self, interaction: discord.Interaction):
+        async with aiohttp.ClientSession() as session:
+            link = ["https://some-random-api.ml/img/dog", "https://some-random-api.ml/img/cat",
+                        "https://some-random-api.ml/img/fox",
+                        "https://some-random-api.ml/img/birb", "https://some-random-api.ml/img/koala",
+                        "https://some-random-api.ml/img/panda", "https://some-random-api.ml/img/red_panda", ]
+            list = random.choice(link)
+            async with session.get(list) as response:
+                data = await response.json()
+                embed3 = discord.Embed(title="", description="", colour=discord.Colour.random())
+                embed3.set_image(url=data["link"])
+
+                #hello
+
+                button2 = Button(label="cancle",style=discord.ButtonStyle.red,)
+                async def button2_callback(interaction):
+
+                    await interaction.response.edit_message(view=view.clear_items())
 
 
+                button = Button(label="Next image", style=discord.ButtonStyle.primary)
+                view = View()
+
+                async def button_callback(interaction):
+                    async with aiohttp.ClientSession() as session:
+                        link2 = ["https://some-random-api.ml/img/dog", "https://some-random-api.ml/img/cat",
+                                "https://some-random-api.ml/img/fox",
+                                "https://some-random-api.ml/img/birb", "https://some-random-api.ml/img/koala",
+                                "https://some-random-api.ml/img/panda", "https://some-random-api.ml/img/red_panda", ]
+                        list2 = random.choice(link)
+                        async with session.get(list2) as response:
+                            data = await response.json()
+                            embed4 = discord.Embed(title="", description="", colour=discord.Colour.random())
+                            embed4.set_image(url=data["link"])
+                    await interaction.response.edit_message(embed=embed4, view=view)
+
+                button.callback = button_callback
+                button2.callback = button2_callback
+                view.add_item(button)
+                view.add_item(button2)
 
 
-#give a random animal image
+                await interaction.response.send_message(embed=embed3, view=view)
+
+
+    #animals slash error handler
+    @animalslash.error
+    async def animalslash_error(self, interaction: discord.Interaction, error: app_commands.AppCommandError):
+        if isinstance(error ,  app_commands.CommandOnCooldown):
+            await interaction.response.send_message(f"{error}")
+        else:
+            await interaction.response.send_message("**something went wrong do ``$help`` for help**")
+
+
+    #animal prefix command
     @commands.command()
+    @commands.cooldown(1 , 5 , BucketType.user)
     async def animals(self, ctx):
         async with aiohttp.ClientSession() as session:
             link = ["https://some-random-api.ml/img/dog", "https://some-random-api.ml/img/cat",
@@ -65,7 +117,29 @@ class image(commands.Cog):
 
 
 
-#give a random dog image
+
+
+    #give a random dog image slash command
+    @app_commands.command(name="dog", description="get a random dog photo")
+    @app_commands.checks.cooldown(1, 5, key=lambda j: (j.guild_id, j.user.id))
+    async def dogslash(self, interaction: discord.Interaction):
+        async with aiohttp.ClientSession() as session:
+            link = "https://some-random-api.ml/img/dog"
+            async with session.get(link) as response:
+                data = await response.json()
+                embed3 = discord.Embed(title="", description="", colour=discord.Colour.random())
+                embed3.set_image(url=data["link"])
+                await interaction.response.send_message(embed=embed3)
+
+    @dogslash.error
+    async def dogslash_error(self , interaction: discord.Interaction , error : app_commands.AppCommandError):
+        if isinstance(error , app_commands.CommandOnCooldown):
+            await interaction.response.send_message(f"{error}")
+        else:
+            await interaction.response.send_message("APi is down try again after few moments")
+
+
+
     @commands.command()
     async def dog(self, ctx):
         async with aiohttp.ClientSession() as session:
@@ -84,6 +158,29 @@ class image(commands.Cog):
 
 
 #give a random cat image
+    @app_commands.command(name="cat", description="do you love cats :cat:?")
+    @app_commands.checks.cooldown(1, 5, key=lambda j: (j.guild_id, j.user.id))
+    async def catslash(self, interaction : discord.Interaction):
+        async with aiohttp.ClientSession() as session:
+            link = "https://some-random-api.ml/img/cat"
+            async with session.get(link) as response:
+                data = await response.json()
+                embed3 = discord.Embed(title="", description="", colour=discord.Colour.random())
+                embed3.set_image(url=data["link"])
+                await interaction.response.send_message(embed=embed3)
+
+
+    @catslash.error
+    async def catslash_error(self, interaction : discord.Interaction , error : app_commands.AppCommandError):
+        if isinstance(error , app_commands.CommandOnCooldown):
+            await interaction.response.send_message(f"{error}")
+        elif isinstance(error, app_commands.CommandInvokeError):
+            await interaction.response.send_message("seomthing went wrong or api is down| pls try again letter or report by doing $bugs <reason>")
+        else:
+            await interaction.response.send_message("something went wrong do ``$help`` or report the bug by doing ``$bug``")
+
+
+
     @commands.command()
     async def cat(self, ctx):
         async with aiohttp.ClientSession() as session:
@@ -121,9 +218,43 @@ class image(commands.Cog):
                 await ctx.send(embed=embed3)
                 await ctx.message.clear_reaction("✅")
 
+    @app_commands.command(name="joke",description="lol laugh at this user")
+    @app_commands.checks.cooldown(1, 5, key=lambda j: (j.guild_id, j.user.id))
+    async def joke_slash(self, intreaction : discord.Interaction):
+        async with aiohttp.ClientSession() as session:
+            link = "https://some-random-api.ml/joke"
+            async with session.get(link) as response:
+                data = await response.json()
+                joke = data["joke"]
+                embed3 = discord.Embed(title="", description=f"**{joke}**", colour=discord.Colour.random())
+                await intreaction.response.send_message(embed = embed3)
+
+    @app_commands.command(name="youtubet",description="get a youtube video thumbnail")
+    @app_commands.choices(type = [
+        Choice(name="max",value="maxresdefault.jpg"),
+        Choice(name="default",value="default.jpg"),
+        Choice(name="medium",value="mqdefault.jpg"),
+        Choice(name="small",value="sddefault.jpg")
+
+    ])
+
+    async def ytgrab(self,interaction: discord.Interaction,type:str,url: str = None):
 
 
-#minecraft command
+        search_url = str(url.rsplit("=",1)[1])
+        orl = f"https://img.youtube.com/vi/{search_url}/{type}"
+        await interaction.response.send_message(orl)
+
+
+
+
+
+
+
+
+
+
+    #minecraft command
     @commands.command(pass_context=True)
     async def minecraft(self, ctx, *, username=None):
 
@@ -154,13 +285,58 @@ class image(commands.Cog):
 
 
 #trigger command
+    @app_commands.command(name="trigger", description="trigger a user")
+    @app_commands.checks.cooldown(1, 5, key=lambda j: (j.guild_id, j.user.id))
+    async def triggerslash(self, interaction: discord.Interaction, member: discord.Member=None):
+        if member != None:
+            search_url = f"https://some-random-api.ml/canvas/triggered?avatar={member.avatar.url}"
+            slice_object = slice(-10)
+            resp = get(f"{search_url[slice_object]}")
+
+            if resp.status_code == 200:
+                open('trigger.gif', 'wb').write(resp.content)
+                d = open("trigger.gif", "r+")
+                file_to_send = f'{os.getcwd()}/{d.name}'
+                logging.warning(file_to_send)
+
+
+                await interaction.response.send_message(file=discord.File("trigger.gif"))
+
+
+            elif resp.status_code != 200:
+                jsonresp = resp.json()
+
+                print(resp.status_code)
+                print(jsonresp)
+        else:
+            search_url = f"https://some-random-api.ml/canvas/triggered?avatar={interaction.user.avatar.url}"
+            slice_object = slice(-10)
+            resp = get(f"{search_url[slice_object]}")
+
+            if resp.status_code == 200:
+                open('trigger.gif', 'wb').write(resp.content)
+                d = open("trigger.gif", "r+")
+                file_to_send = f'{os.getcwd()}/{d.name}'
+                logging.warning(file_to_send)
+
+
+                await interaction.response.send_message(file=discord.File("trigger.gif"))
+
+
+            elif resp.status_code != 200:
+                jsonresp = resp.json()
+
+                print(resp.status_code)
+                print(jsonresp)
+
     @commands.command(description="get a user triggerd")
     async def trigger(self, ctx, member: discord.Member = None):
 
         if member != None:
-            search_url = f"https://some-random-api.ml/canvas/triggered?avatar={member.avatar_url}"
-            slice_object = slice(-14)
-            resp = get(f"{search_url[slice_object]}png")
+            logging.warning(member.avatar.url)
+            search_url = f"https://some-random-api.ml/canvas/triggered?avatar={member.avatar.url}"
+            slice_object = slice(-10)
+            resp = get(f"{search_url[slice_object]}")
 
             if resp.status_code == 200:
                 open('trigger.gif', 'wb').write(resp.content)
@@ -178,7 +354,7 @@ class image(commands.Cog):
                 print(resp.status_code)
                 print(jsonresp)
         else:
-            search_url = f"https://some-random-api.ml/canvas/triggered?avatar={ctx.message.author.avatar_url}"
+            search_url = f"https://some-random-api.ml/canvas/triggered?avatar={ctx.message.author.avatar.url}"
             slice_object = slice(-14)
             resp = get(f"{search_url[slice_object]}png")
 
@@ -383,12 +559,13 @@ class image(commands.Cog):
 
 #make somone comrade
 
+
     @commands.command(description="get a user comrade")
     async def comrade(self, ctx, member: discord.Member = None):
         if member is None:
-            search_url = f"https://some-random-api.ml/canvas/comrade?avatar={ctx.message.author.avatar_url}"
-            slice_object = slice(-14)
-            resp = get(f"{search_url[slice_object]}png")
+            search_url = f"https://some-random-api.ml/canvas/comrade?avatar={ctx.message.author.avatar.url}"
+            slice_object = slice(-10)
+            resp = get(f"{search_url[slice_object]}")
             if resp.status_code == 200:
                 open('comrade.gif', 'wb').write(resp.content)
                 d = open("comrade.gif", "r+")
@@ -426,6 +603,25 @@ class image(commands.Cog):
 
 
 #get a color by hex code
+    @app_commands.command(name="colour",description="get a colour by hex code")
+    @app_commands.checks.cooldown(1 , 5 , key=lambda j: (j.guild_id, j.user.id))
+    @app_commands.describe(hex= "hex code only 6 latters")
+    async def colourslash(self, interaction : discord.Interaction ,hex: str = None):
+        if len(hex) > 6 or hex == None :
+            await interaction.response.send_message("hex code only contain 6 latters with numbers")
+        else:
+            search_url = f"https://some-random-api.ml/canvas/colorviewer?hex={hex}"
+            em = discord.Embed(title=hex, description="")
+            em.set_image(url=search_url)
+            await interaction.response.send_message(embed = em)
+
+    @colourslash.error
+    async def colourslash_error(self, ineraction : discord.Interaction , error : app_commands.AppCommandError):
+        if isinstance(error , app_commands.CommandOnCooldown):
+            await ineraction.response.send_message(f"{error}", ephemeral=True)
+        else:
+            await ineraction.response.send_message("API is down try again in some moments",ephemeral=True)
+
 
     @commands.command(description="get a user comrade")
     async def colour(self, ctx, hex=None):
@@ -438,6 +634,38 @@ class image(commands.Cog):
         else:
             await ctx.send("**fucking give me a colour code**")
             return
+
+    @app_commands.command(name="wikipedia", description="search about anything on wikipedia ")
+    @app_commands.checks.cooldown(1, 5, key=lambda j: (j.guild_id, j.user.id))
+    @app_commands.describe(search="Search")
+    async def wikislash(self, interaction: discord.Interaction, search: str):
+        try:
+            search_url = None
+            if search != None:
+                search = search.replace(' ', '_')
+                logging.warning(search)
+
+                search_url = f"https://en.wikipedia.org/w/api.php?action=opensearch&search={search}&limit=1"
+                logging.warning(search_url)
+            else:
+                await interaction.response.send_message("``your mom``",ephemeral=True)
+
+            async with aiohttp.ClientSession() as cs:
+                async with cs.get(search_url) as r:
+                    res = await r.json()
+                    logging.warning(res[3][0])
+                    await interaction.response.send_message(res[3][0])
+
+        except IndexError:
+            await interaction.response.send_message(f"``there is no page called {search}``",ephemeral=True)
+
+
+    @wikislash.error
+    async def wikislash_error(self , interaction : discord.Interaction , error : app_commands.AppCommandError):
+        if isinstance(error , app_commands.CommandOnCooldown):
+            await interaction.response.send_message(f"{error}")
+        else:
+            await interaction.response.send_message("something went wrong")
 
     @commands.command(description="get a user comrade")
     async def wiki(self, ctx, *,search=None):
@@ -461,6 +689,100 @@ class image(commands.Cog):
         except IndexError:
             await ctx.send(f"``there is no page called {search}``")
 
+    @commands.command(description="")
+    async def ly(ctx, *, search=None):
+        try:
+            search_url = None
+            if search != None:
+                search = search.replace(' ', '_')
+                logging.warning(search)
+
+                search_url = f"https://some-random-api.ml/lyrics?title={search}"
+                logging.warning(search_url)
+            else:
+                await ctx.send("``your mom``")
+
+            async with aiohttp.ClientSession() as cs:
+                async with cs.get(search_url) as r:
+                    res = await r.json()
+                    embed = discord.Embed(title=res["title"],description=res["lyrics"])
+                    embed.set_image(url=res["thumbnail"]["genius"])
+
+                    await ctx.send(embed = embed)
+                    logging.warning(res["thumbnail"]["genius"])
+
+
+        except IndexError:
+            await ctx.send(f"``there is no page called {search}``")
+
+
+
+    @app_commands.command(name="convertcase",description="convert your case of word and sentence")
+    @app_commands.checks.cooldown(1, 5, key=lambda j: (j.guild_id, j.user.id))
+    @app_commands.describe(message = "the message that you want to convert the case ")
+    @app_commands.choices(type = [
+        Choice(name="title case",value="Title"),
+        Choice(name="upper case",value="upper"),
+        Choice(name="lower case",value="lower"),
+        Choice(name="capitalize case",value="capitalize"),
+        Choice(name="swap case", value="swap"),
+        Choice(name="alternate case", value="alt")
+    ])
+    async def convertcase(self,interaction : discord.Interaction ,type:str,message: str):
+        button = Button(label="delete", style=discord.ButtonStyle.danger)
+        view = View()
+
+        async def button_callback(interaction):
+            await interaction.message.delete()
+
+        button.callback = button_callback
+        view.add_item(button)
+
+        if str(type) == "Title":
+            embed = discord.Embed(description=f"**{message.title()}**",colour= discord.Colour.blue())
+
+            await interaction.response.send_message(embed = embed, view = view)
+            return
+        elif str(type) == "upper":
+            message = discord.Embed(description=f"**{message.upper()}**",colour= discord.Colour.blue())
+
+            await interaction.response.send_message(embed = message, view=view)
+            return
+        elif str(type) == "lower":
+            message =discord.Embed(description=f"**{message.lower()}**",colour= discord.Colour.blue())
+
+            await interaction.response.send_message(embed =message,view=view)
+            return
+        elif str(type) == "capitalize":
+            message= discord.Embed(description=f"**{message.capitalize()}**",colour= discord.Colour.blue())
+
+            await interaction.response.send_message(embed = message,view=view)
+            return
+        elif str(type) == "swap":
+            message = discord.Embed(description=f"**{message.swapcase()}**",colour= discord.Colour.blue())
+
+            await interaction.response.send_message(embed = message, view=view)
+            return
+        elif str(type) == "alt":
+            finalswap = ""
+            count = len(message)
+            i = 0
+
+            while (i < count):
+                if i % 2 == 0:
+                    # print(str.lower(apple[i]),end="")
+                    finalswap += str.lower(message[i])
+
+                else:
+                    finalswap += str.upper(message[i])
+                i += 1
+            embed = discord.Embed(description=f"**{finalswap}**",colour= discord.Colour.blue())
+
+            await interaction.response.send_message(embed = embed,view=view)
+            return
+        else:
+            embed = discord.Embed(title="something went wrong")
+            await interaction.response.send_message(embed,ephemeral=True)
 
 
 
@@ -491,5 +813,6 @@ class image(commands.Cog):
 
 
 
-def setup(client):
-    client.add_cog(image(client))
+async def setup(bot: commands.Bot ) -> None:
+    await bot.add_cog(
+        randomapi(bot))

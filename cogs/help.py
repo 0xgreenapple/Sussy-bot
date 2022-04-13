@@ -282,5 +282,5 @@ class help(commands.Cog):
 
 
 
-def setup(client):
-    client.add_cog(help(client))
+async def setup(bot):
+    await bot.add_cog(help(bot))
