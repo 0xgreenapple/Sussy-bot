@@ -9,7 +9,7 @@ import random
 from glob import glob
 from itertools import cycle
 import json
-
+import sqlite3
 from cogs.normal import PersistentView
 
 COGS = [path.split("\\")[-1][:-3] for path in glob("./cogs/*.py")]
@@ -69,8 +69,7 @@ class mybot(commands.Bot):
     async def setup_hook(self):
         """this code load the cogs and commands files"""
         self.add_view(PersistentView())
-        COGS = ["normal"
-            ,"randomapi"]
+        COGS = ["normal"]
         for cog in COGS:
             await self.load_extension(f"cogs.{cog}")
             await bot.tree.sync()
@@ -78,8 +77,18 @@ class mybot(commands.Bot):
     #inform that bot is ready, online
     async def on_ready(self):
         """print client is ready on ready"""
+        db = sqlite3.connect("main.sqlite")
+        cursor = db.cursor()
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS role(
+            guild_id TEXT,
+            rule TEXT
+            )
+        ''')
+
         await bot.change_presence(activity=discord.Game(name="green apple"))
         self.change_status.start()
+
         print(f"We have logged in as {self.user}.")
 
     #change the status as time pass
@@ -194,6 +203,7 @@ class mybot(commands.Bot):
 """===================================================================================================="""
 token = os.environ['TOKEN']
 bot = mybot()
+bot.remove_command("help")
 bot.run(token)
 
 

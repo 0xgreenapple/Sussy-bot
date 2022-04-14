@@ -9,15 +9,17 @@ from discord import app_commands, role
 from discord.ui import Button , View
 import json
 from discord.utils import get
+import sqlite3
 
 
 
 
 class PersistentView(discord.ui.View):
-    def get_message(self,interaction: discord.Interaction ):  ##first we define get_prefix
+    """def get_message(self,interaction: discord.Interaction ):  ##first we define get_prefix
         with open('role.json', 'r') as f:  ##we open and read the prefixes.json, assuming it's in the same file
             msg = json.load(f)  # load the json as prefixes
-        return msg[str(interaction.guild.id)]
+        return msg[str(interaction.guild.id)]"""
+
 
 
 
@@ -29,11 +31,17 @@ class PersistentView(discord.ui.View):
 
     @discord.ui.button(label="verify", style=discord.ButtonStyle.primary,custom_id="persistent_view:ping")
     async def pi(self,interaction: discord.Interaction, button: discord.ui.Button):
-        role_id = int(self.get_message(interaction))
+        db = sqlite3.connect('main.sqlite')
+        cursor = db.cursor()
+        cursor.execute(f"SELECT rule FROM role WHERE guild_id = {interaction.guild.id}")
+        result = cursor.fetchone()
+        filter = str(result[0])
+        a = filter.replace("<","").replace(">","").replace("&","").replace("@","")
+
+        role_id = int(a)
+        logging.warning(a)
+
         role = get(interaction.guild.roles, id=role_id)
-
-
-
 
 
         await interaction.user.add_roles(role)  # adds role if not already has it
@@ -66,6 +74,9 @@ class normal(commands.Cog):
     @app_commands.describe(member = "User")
     async def whoisslash(self,interaction: discord.Interaction,member: discord.Member = None):
         if member != None :
+            roles = []
+            for role in member.roles:
+                roles.append(role)
             embed10 = discord.Embed(title=member.display_name, description=member.mention, url=member.avatar.url,
                                     colour=discord.Colour.red())
             embed10.add_field(name="ID", value=member.id, inline=False)
@@ -73,26 +84,43 @@ class normal(commands.Cog):
             embed10.add_field(name="__**join server at**__ ", value=member.joined_at.strftime('%a, %d %B %Y, %I:%M %p UTC'))
             embed10.add_field(name="__**created at**__ ", value=member.created_at.strftime('%a, %d %B %Y, %I:%M %p UTC'))
             embed10.add_field(name='Bot?', value=member.bot)
+            if len(roles) == 1:
+                embed10.add_field(name=f'Roles ({len(roles) - 1})', value='**no roles**')
+            else:
+                embed10.add_field(name=f'Roles ({len(roles) - 1})',
+                                  value=' '.join([role.mention for role in roles if role.name != '@everyone']))
+
+
             embed10.set_thumbnail(url=member.avatar.url)
             await interaction.response.send_message(embed=embed10)
         else:
+             roles = []
+             for role in interaction.user.roles:
+                 roles.append(role)
              embed10 = discord.Embed(title=interaction.user.name, description=interaction.user.mention, url=interaction.user.avatar.url,
                                  colour=discord.Colour.red())
              embed10.add_field(name="ID", value=interaction.user.id, inline=False)
              embed10.add_field(name="status", value=interaction.user.status, inline=False)
              embed10.add_field(name="__**join server at**__ ", value=interaction.user.joined_at.strftime('%a, %d %B %Y, %I:%M %p UTC'))
              embed10.add_field(name="__**created at**__ ", value=interaction.user.created_at.strftime('%a, %d %B %Y, %I:%M %p UTC'))
+             embed10.add_field(name='Bot?', value=interaction.user.bot)
+             if len(roles) == 1:
+                 embed10.add_field(name=f'Roles ({len(roles) - 1})', value='**NIL**')
+             else:
+                 embed10.add_field(name=f'Roles ({len(roles) - 1})',
+                                 value=' '.join([role.mention for role in roles if role.name != '@everyone']))
+
              embed10.set_thumbnail(url=interaction.user.avatar.url)
              await interaction.response.send_message(embed=embed10)
 
-    #whois slash_error
+    """#whois slash_error
     @whoisslash.error
     async def whoisslash_error(self, interaction: discord.Interaction, error: app_commands.AppCommandError):
         if isinstance(error, app_commands.CommandOnCooldown):
             await interaction.response.send_message(f"{error}", ephemeral=True)
         else:
             await interaction.response.send_message("something went wrong do $help or report for bugs by doing $bugs <bugs>", ephemeral=True)
-
+"""
 
 
 
@@ -349,6 +377,7 @@ class normal(commands.Cog):
 
         a = round(psutil.virtual_memory().available * 100 / psutil.virtual_memory().total)
         z = 100 - a
+
         uptime = str(datetime.timedelta(seconds=int(round(time.time() - startTime))))
         embed = discord.Embed(title="sussy-bot status | version alpha",description="")
         embed.add_field(name="ping",value=f'{round(self.bot.latency * 1000)}ms')
@@ -600,6 +629,33 @@ class normal(commands.Cog):
         # However this is outside of the scope of this simple example.
         view = PersistentView()
         await ctx.send("What's your favourite colour?", view=view)
+
+    @commands.command()
+    @commands.has_permissions(administrator=True)  # permissions
+    async def verify_set(self, ctx ,channel: discord.TextChannel, *, role):
+        db = sqlite3.connect('main.sqlite')
+        cursor = db.cursor()
+        cursor.execute(f"SELECT rule FROM role WHERE guild_id = {ctx.guild.id}")
+        result = cursor.fetchone()
+        if result is None:
+            sql = ("INSERT INTO role(guild_id, rule) VALUES(?,?)")
+            val = (ctx.guild.id, role)
+        elif result is not None:
+            sql = ("UPDATE role SET rule = ? WHERE guild_id = ?")
+            val = (role, ctx.guild.id)
+        cursor.execute(sql, val)
+        db.commit()
+        cursor.close()
+        db.close()
+        embed11 = discord.Embed(title="click verify to verify yourself")
+
+        view = PersistentView()
+
+        await channel.send(embed=embed11, view=view)
+        await ctx.send("verification setup complete")
+
+
+
 async def setup(bot: commands.Bot ) -> None:
     await bot.add_cog(
         normal(bot))
