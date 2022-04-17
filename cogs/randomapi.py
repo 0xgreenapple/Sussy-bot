@@ -287,6 +287,12 @@ class randomapi(commands.Cog):
 
 
 
+
+
+
+        """messageCount[author] = 1
+        with open('messages.json', 'w') as f:  # write in the prefix.json "message.guild.id": "bl!"
+            json.dump(messageCount, f, indent=4)"""
 #joke command
     @commands.command()
     async def joke(self, ctx):

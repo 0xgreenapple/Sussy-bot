@@ -5,11 +5,14 @@ import aiohttp
 import json
 import logging
 import sqlite3
+import asyncpg
+from main import *
 
 import json
-class test(commands.Cog):
-    def __init__(self, bot: commands.Bot) -> None:
+class test(commands.Cog ,):
+    def __init__(self, bot: commands.Bot , ) -> None:
         self.bot = bot
+
 
     """@app_commands.command(name="send", description="send message to a channel")
     @app_commands.checks.cooldown(1, 5, key=lambda j: (j.guild_id, j.user.id))
@@ -112,9 +115,49 @@ class test(commands.Cog):
             await ctx.send("``this server does not have a rule| what a fool``")
         else:
             await ctx.send(str(result[0]))"""
+    """@tasks.loop(seconds=3600)
+        async def change_status(self):
+            status = cycle(['$help', 'Green apple', 'amongus', 'SUS', 'bruh', 'ur mom', '0101000101', 'game of life'])
+            await bot.change_presence(activity=discord.Game(next(status)))"""
 
 
+    """@commands.command()
+    async def hello1(self, ctx):
+        logging.warning('hello')
 
+    @commands.command()
+    async def bal(self,ctx , roles):"""
+    @commands.Cog.listener()
+    async def on_ready(self):
+        """print client is ready on ready"""
+        await self.pg_con.execute("CREATE TABLE IF NOT EXISTS economy (user_id BIGINT NOT NULL, money BIGINT)")
+        await self.pg_con.execute("ALTER TABLE economy ADD COLUMN IF NOT EXISTS user_id BIGINT NOT NULL")
+        await self.pg_con.execute("ALTER TABLE economy ADD COLUMN IF NOT EXISTS money BIGiNT")
+
+    async def add(self, id , amount=2000):
+        bal = await self.pg_con.fetchrow("SELECT money FROM economy WHERE user_id = $1",id)
+        await self.pg_con.execute('UPDATE economy SET money = $! WHERE user_id =$2',amount+bal[0],id)
+
+    async def cheak(self, id):
+        user = await self.pg_con.fetchrow("SELECT * FROM economy WHERE user_id = $1",id)
+        if not user:
+            await self.pg_con.execute("INSERT INTO economy (user_id, money) VALUES ($1, $2)",id,2000)
+
+    async def balance(self, id):
+        bal = await self.pg_con.fetchrow("SELECT money FROM economy WHERE user_id = $1", id)
+        return bal[0]
+
+    async def top(self):
+        tops = await self.pg_con.fetchrow("SELECT * FROM economy ORDER BY money DESC NULLS LAST")
+        return tops
+
+    @commands.command()
+    async def trials(self, ctx):
+        id= ctx.author.id
+        await self.cheak(id)
+        await self.add(id,1000)
+        tops = await self.top()
+        await ctx.send("done")
 
 
 

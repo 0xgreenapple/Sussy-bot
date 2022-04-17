@@ -2,6 +2,8 @@ import logging
 
 import discord
 import datetime, time
+from datetime import datetime
+from datetime import timedelta
 from discord.ext import commands
 import psutil
 from discord.ext.commands import cooldown, BucketType, MemberConverter
@@ -10,6 +12,7 @@ from discord.ui import Button , View
 import json
 from discord.utils import get
 import sqlite3
+
 
 
 
@@ -111,6 +114,7 @@ class normal(commands.Cog):
                                  value=' '.join([role.mention for role in roles if role.name != '@everyone']))
 
              embed10.set_thumbnail(url=interaction.user.avatar.url)
+             embed10.add_field(name="permissions",value=interaction.user.guild_permissions)
              await interaction.response.send_message(embed=embed10)
 
     """#whois slash_error
@@ -128,7 +132,7 @@ class normal(commands.Cog):
     @commands.command(name="whois")
     @cooldown(1, 5, BucketType.channel)
     async def whois(self, ctx, member: discord.Member = None):
-        if member != None:
+        if member is not None:
             embed10 = discord.Embed(title=member.display_name, description=member.mention, url=member.avatar.url,
                                     colour=discord.Colour.red())
             embed10.add_field(name="ID", value=member.id, inline=False)
@@ -171,6 +175,51 @@ class normal(commands.Cog):
         else:
             embed = discord.Embed(title="something went wrong :face_with_raised_eyebrow: ")
             await ctx.send(embed=embed)
+    @commands.command()
+    @commands.cooldown(1,5, BucketType.user)
+    async def membercount(self, ctx):
+        time = datetime.utcnow().strftime(r"%I:%M %p")
+        emed = discord.Embed(title=f"members : {ctx.message.guild.member_count}")
+        emed.set_footer(text=f"today at {time}")
+        await ctx.send(embed = emed)
+
+    @membercount.error
+    async def membercounterror(self,ctx ,error):
+        if isinstance(error , commands.CommandOnCooldown):
+            await ctx.send(error)
+        elif isinstance(error, commands.CommandInvokeError):
+            await ctx.send("something went wrong")
+            raise error
+        else:
+            await ctx.send("something went wrong, what you just did with me")
+            raise error
+
+
+
+    @app_commands.command(name="membercount" ,description="show how many members this guild have")
+    @app_commands.checks.cooldown(1, 5, key=lambda j: (j.guild_id, j.user.id))
+    async def memeberslash(self, interaction : discord.Interaction):
+        time = datetime.utcnow().strftime(r"%I:%M %p")
+        emed = discord.Embed(title=f"members : {interaction.guild.member_count}")
+        emed.set_footer(text=f"today at {time}")
+        await interaction.response.send_message(embed = emed)
+
+
+
+
+    @memeberslash.error
+    async def memberslash_error(self, interaction : discord.Interaction , error : app_commands.AppCommandError):
+        if isinstance(error , app_commands.CommandOnCooldown):
+            await interaction.response.send_message(error , ephemeral=True)
+        else:
+            await interaction.response.send_message("something went wrong while running the command.",ephemeral=True)
+            raise error
+
+
+
+
+
+
 
 
 
@@ -189,6 +238,8 @@ class normal(commands.Cog):
         button.callback = button_callback
         view.add_item(button)
         await interaction.response.send_message(embed = embed11,  view=view)
+
+
 
     @pingslash.error
     async def pingslash_error(self, interaction: discord.Interaction, error: app_commands.AppCommandError):
@@ -352,7 +403,7 @@ class normal(commands.Cog):
     async def statusslash(self, interaction: discord.Interaction):
         a = round(psutil.virtual_memory().available * 100 / psutil.virtual_memory().total)
         z = 100 - a
-        uptime = str(datetime.timedelta(seconds=int(round(time.time() - startTime))))
+        uptime = str(timedelta(seconds=int(round(time.time() - startTime))))
         embed = discord.Embed(title="sussy-bot status | version alpha", description="")
         embed.add_field(name="ping", value=f'{round(self.bot.latency * 1000)}ms')
         embed.add_field(name="Memory ", value=f'{z}% used', )
@@ -367,8 +418,9 @@ class normal(commands.Cog):
         if isinstance(error, app_commands.CommandOnCooldown):
             await interaction.response.send_message(f"{error}", ephemeral=True)
         else:
-            await interaction.response.send_message(
-                "something went wrong do $help or report for bugs by doingn $bugs <bugs>", ephemeral=True)
+            await interaction.response.send_message("something went wrong do $help or report for bugs by doingn $bugs <bugs>", ephemeral=True)
+            raise error
+
 
     #status prefix command
     @commands.command()
@@ -378,7 +430,7 @@ class normal(commands.Cog):
         a = round(psutil.virtual_memory().available * 100 / psutil.virtual_memory().total)
         z = 100 - a
 
-        uptime = str(datetime.timedelta(seconds=int(round(time.time() - startTime))))
+        uptime = str(timedelta(seconds=int(round(time.time() - startTime))))
         embed = discord.Embed(title="sussy-bot status | version alpha",description="")
         embed.add_field(name="ping",value=f'{round(self.bot.latency * 1000)}ms')
         embed.add_field(name="Memory ",value=f'{z}% used',)
@@ -423,10 +475,150 @@ class normal(commands.Cog):
             embed = discord.Embed(title="done")
             await ctx.send(embed = embed)
 
+    """@commands.command()
+    async def serverinfo(self, ctx):
+        embed = discord.Embed()
+        embed.set_author(icon_url=ctx.guild.icon.url , name=ctx.guild.name)
+        embed.set_thumbnail(url=)"""
+
+    """@commands.Cog.listener()
+    async def on_message(self, ctx):
+        if not ctx.author.bot:
+            print('function load')
+            with open('messages.json', 'r') as f:
+                users = json.load(f)
+                print('file load')
+            await self.update_data(users, ctx.author, ctx.guild)
+            await self.add_experience(users, ctx.author, 4, ctx.guild)
+            await self.level_up(users, ctx.author, ctx.channel, ctx.guild)
+
+            with open('messages.json', 'w') as f:
+                json.dump(users, f)
+
+    async def update_data(self, users, user, server):
+        if not str(server.id) in users:
+            users[str(server.id)] = {}
+            if not str(user.id) in users[str(server.id)]:
+                users[str(server.id)][str(user.id)] = {}
+                users[str(server.id)][str(user.id)]['experience'] = 0
+                users[str(server.id)][str(user.id)]['level'] = 1
+        elif not str(user.id) in users[str(server.id)]:
+            users[str(server.id)][str(user.id)] = {}
+            users[str(server.id)][str(user.id)]['experience'] = 0
+            users[str(server.id)][str(user.id)]['level'] = 1
+
+    async def add_experience(self, users, user, exp, server):
+        users[str(user.guild.id)][str(user.id)]['experience'] += exp
+
+    async def level_up(self,users, user, channel, server):
+        experience = users[str(user.guild.id)][str(user.id)]['experience']
+        lvl_start = users[str(user.guild.id)][str(user.id)]['level']
+        lvl_end = int(experience ** (1 / 4))
+        if str(user.guild.id) != '939208771929014372':
+            if lvl_start < lvl_end:
+                await channel.send('{} has leveled up to Level {}'.format(user.mention, lvl_end))
+                users[str(user.guild.id)][str(user.id)]['level'] = lvl_end
+
+    @commands.command(aliases=['rank', 'lvl'])
+    async def level(self, ctx, member: discord.Member = None):
+
+        if not member:
+            user = ctx.message.author
+            with open('messages.json', 'r') as f:
+                users = json.load(f)
+            lvl = users[str(ctx.guild.id)][str(user.id)]['level']
+            exp = users[str(ctx.guild.id)][str(user.id)]['experience']
+
+            embed = discord.Embed(title='Level {}'.format(lvl), description=f"{exp} XP ", color=discord.Color.green())
+            embed.set_author(name=ctx.author, icon_url=ctx.author.avatar.url)
+            await ctx.send(embed=embed)
+        else:
+            with open('messages.json', 'r') as f:
+                users = json.load(f)
+            lvl = users[str(ctx.guild.id)][str(member.id)]['level']
+            exp = users[str(ctx.guild.id)][str(member.id)]['experience']
+            embed = discord.Embed(title='Level {}'.format(lvl), description=f"{exp} XP", color=discord.Color.green())
+            embed.set_author(name=member, icon_url=member.avatar.url)
+
+            await ctx.send(embed=embed)"""
+
+
+
+
+
+    """def get_messages(self,ctx):  ##first we define get_prefix
+        with open('normal.json', 'r') as f:  ##we open and read the prefixes.json, assuming it's in the same file
+            messageCount = json.load(f)  # load the json as prefixes
+        return messageCount[str(ctx.guild.id)]
+    @commands.Cog.listener()
+
+    async def on_message(self, ctx):
+        author = str(ctx.author.id)
+        with open('normal.json', 'r') as f:  # read the prefix.json file
+            messageCount = json.load(f)
+
+        # if author in messageCount:
+        #     with open('normal.json', 'w') as f:  # write in the prefix.json "message.guild.id": "bl!"
+        #         message_data = [{"888058231094665266": 6, "389604896606781440": 5}]
+        #         json.dump(message_data, f, indent=4)
+        await self.update_userdata(author, messageCount, ctx)
+        logging.warning(ctx.guild)
+
+    async def update_userdata(self, author, messageCount, ctx):
+        counter = 0
+        guild = ctx.guild.id
+
+        for servers in messageCount:
+            if guild == servers['guild']:
+                author_msg = 0
+                if author in servers['data']:
+                    servers['data'][author] += 1
+                    with open('normal.json', 'w') as f:  # write in the prefix.json "message.guild.id": "bl!"
+                        json.dump(servers, f, indent=4)
+                        print(servers['data'])
+                else:
+                    servers['data'][author] = 1
+                    with open('normal.json', 'w') as f:  # write in the prefix.json "message.guild.id": "bl!"
+                        json.dump(servers, f, indent=4)
+                        print(servers)
+            else:
+                with open('normal.json', 'w') as f:  # write in the prefix.json "message.guild.id": "bl!"
+                    json.dump(servers['data'], f, indent=4)
+                    print(servers['data'])"""
+
+
+
+
+
+
+
+
+        # if author in messageCount:
+        #     messageCount[0] += 1
+
+        # else:
+        #     messageCount[author] = 1
+        #     logging.warning('No')
+
+
+        # if author in messageCount:
+        #     messageCount[author] += 1
+        #     with open('normal.json', 'w') as f:  # write in the prefix.json "message.guild.id": "bl!"
+        #         final_data = {**json_data, **message_data}
+        #         logging.warning(final_data)
+        #         json.dump(final_data, f, indent=4)
+        # else:
+        #     messageCount[author] = 1
+        #     with open('normal.json', 'w') as f:  # write in the prefix.json "message.guild.id": "bl!"
+        #         final_data = {**json_data, **message_data}
+        #         logging.warning(final_data)
+        #         json.dump(final_data, f, indent=4)
 
 
 
     #morseslash command
+
+
     @app_commands.command(name="morse", description="wanna write in dots ")
     @app_commands.checks.cooldown(1, 5, key=lambda j: (j.guild_id, j.user.id))
     @app_commands.describe(message = "message you wan to convert to")
@@ -456,6 +648,8 @@ class normal(commands.Cog):
                 cipher += ' '
 
         await interaction.response.send_message(cipher)
+
+
 
     @morseslash.error
     async def morseslash_error(self, interaction: discord.Interaction, error: app_commands.AppCommandError):

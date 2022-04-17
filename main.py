@@ -1,9 +1,9 @@
 import logging
-
 import discord
 from discord import app_commands, role
 from discord.ext import commands , tasks
 import os
+from discord.utils import get
 import aiohttp
 import random
 from glob import glob
@@ -11,12 +11,27 @@ from itertools import cycle
 import json
 import sqlite3
 from cogs.normal import PersistentView
+import asyncpg
+from asyncpg.pool import create_pool
+import asyncio
 
 COGS = [path.split("\\")[-1][:-3] for path in glob("./cogs/*.py")]
 
 
 
 """this is the mai n file that run the bot"""
+
+print(
+" eeeee e   e eeeee eeeee e    e    eeeee  eeeee eeeeeee \n "
+"8     8   8 8     8     8    8    8    8 8   8   88  \n " 
+"8eeee 8   8 8eeee 8eeee 8eeee8    8eee8e 8   8   88  \n"
+'     8 8   8     8     8   88      8    8 8   8   88  \n'
+" 8ee88 88ee8 8ee88 8ee88   88      88eee8 8eee8   88  \n")
+
+
+input("are you a robot ?")
+
+
 class Ready(object):
     def __init__(self):
         for cog in COGS:
@@ -33,21 +48,19 @@ class Ready(object):
 def get_prefix(client, message): ##first we define get_prefix
     """load prefix function"""
     try:
-
-        with open('prefixes.json', 'r') as f: ##we open and read the prefixes.json, assuming it's in the same file
+        with open('prefixes.json', 'r') as f: #we open and read the prefixes.json, assuming it's in the same file
             prefixes = json.load(f) #load the json as prefixes
             return prefixes[str(message.guild.id)]
-
     except KeyError:
 
         with open('prefixes.json', 'r') as f:  # read the prefix.json file
-            prefixes = json.load(f)  # load the json file
+            prefixes = json.load(f)            # load the json file
 
         prefixes[str(message.guild.id)] = '$'  # default prefix
 
         with open('prefixes.json', 'w') as f:  # write in the prefix.json "message.guild.id": "bl!"
-            json.dump(prefixes, f, indent=4)  # the indent is to make everything look a bit neater
-        with open('prefixes.json', 'r') as t: ##we open and read the prefixes.json, assuming it's in the same file
+            json.dump(prefixes, f, indent=4)   # the indent is to make everything look a bit neater
+        with open('prefixes.json', 'r') as t:  ##we open and read the prefixes.json, assuming it's in the same file
             prefixes = json.load(t)
 
             return prefixes[str(message.guild.id)]
@@ -55,62 +68,92 @@ def get_prefix(client, message): ##first we define get_prefix
         return
 
 
+# async def create_db_pool():
+
+
+    # self.bot.db = await asyncpg.create_pool(database= "discord", user="postgress", password="galax0")
+    # bot.db = await asyncpg.create_pool(dsn='postgres://postgres:galax0@localhost:5432/discord')
+    # conn = await asyncpg.connect(user='postgres', password='galax0',
+    #                              database='discord', host='127.0.0.1')
+
+
+
+
 
 class mybot(commands.Bot):
-    """the code that run the bit and load prefix"""
+    """the code that run the bot and load prefix"""
     def __init__(self):
         super().__init__(
-            command_prefix = (get_prefix),
+            command_prefix =(get_prefix),
+            case_insensitive= True,
             intents=discord.Intents.all(),
             application_id = 953274927027458148)
         #we use this so the bot doesn't sync commands more than once
 
+
+
+
     #setup cogs
     async def setup_hook(self):
+        print("setting everything up.....")
         """this code load the cogs and commands files"""
         self.add_view(PersistentView())
-        COGS = ["normal"]
+        COGS = ["normal","messagess","randomapi","calc command","example","error handler"]
+        print("loading cogs ....")
+
         for cog in COGS:
             await self.load_extension(f"cogs.{cog}")
             await bot.tree.sync()
-            print(f"{cog} loaded.")
+
+
+            print(f"{cog} loaded    >>>>>>>>")
+        print("setup comelete ...")
+
+
+
+
+
     #inform that bot is ready, online
     async def on_ready(self):
         """print client is ready on ready"""
-        db = sqlite3.connect("main.sqlite")
-        cursor = db.cursor()
-        cursor.execute('''
-            CREATE TABLE IF NOT EXISTS role(
-            guild_id TEXT,
-            rule TEXT
-            )
-        ''')
-
-        await bot.change_presence(activity=discord.Game(name="green apple"))
+        """conn = psycopg2.connect()
+        cur = conn.cursor()
+        cur.execute("CREATE TABLE student ();")
+        conn.commit()
+        cur.close()
+        conn.close()"""
         self.change_status.start()
+        print("status loop complete")
+        print(f"bot is logged as {bot.user}")
 
-        print(f"We have logged in as {self.user}.")
 
-    #change the status as time pass
+
+
+
+
+
     @tasks.loop(seconds=3600)
     async def change_status(self):
-        status = cycle(['$help', 'Green apple', 'amongus', 'SUS', 'bruh', 'ur mom', '0101000101', 'game of life'])
-        await bot.change_presence(activity=discord.Game(next(status)))
+        status = cycle(["do not disturb me :)",'$help', 'Green apple', 'amongus', 'SUS', 'bruh', 'ur mom', '0101000101', 'game of life','what do you know about about rolling down in the deep'])
+        await bot.change_presence(status=discord.Status.online,activity=discord.Activity(type=discord.ActivityType.watching,name=next(status)))
 
-        #load the prefix on guild join
+
+
+    #load the prefix on guild join
     async def on_guild_join(self,guild):  # when the bot joins the guild
+
         with open('prefixes.json', 'r') as f:  # read the prefix.json file
             prefixes = json.load(f)  # load the json file
-
         prefixes[str(guild.id)] = '$'  # default prefix
-
         with open('prefixes.json', 'w') as f:  # write in the prefix.json "message.guild.id": "bl!"
             json.dump(prefixes, f, indent=4)  # the indent is to make everything look a bit neater
-
+        print(f"{guild.name} prefix loaded")
         """send to support server that bot is joined the guild"""
         channel = await bot.fetch_channel(960863076821905478)
         embed = discord.Embed(title=f"i joind the {guild.name} server")
         await channel.send(embed=embed)
+
+
 
     async def on_guild_remove(self,guild):  # when the bot is removed from the guild
         with open('prefixes.json', 'r') as f:  # read the file
@@ -124,8 +167,20 @@ class mybot(commands.Bot):
         embed = discord.Embed(title=f"i left the {guild.name} server")
         await channel.send(embed=embed)
 
+
+
+
+
+
+
     async def on_message(self,message):
-        a = [
+
+        a = ["keep your mouth close",
+             " dont disturb me :)",
+             "stfu",
+             "shut your mouth",
+             "you smell",
+             "nuts?",
             "why you pinged me ",
             "among us",
             "go outside touch some grass",
@@ -138,13 +193,13 @@ class mybot(commands.Bot):
             "f you kid",
             "what the fuck! you looking nice today :)",
             "hmm tell me who is baka",
-            "ummmm u suck"
+            "ummmm u suck",
+             "joe mama",
+             "retard"
         ]
         message_in = message.content
 
-        channel = bot.get_channel('952460342313758760')
         print(f"{message.guild} {message.channel} : {message.author}: {message.author.display_name}: {message.content}")
-        sussyserver_guild = bot.get_guild(917471209329946695)
 
         if message.author.bot:
             return
@@ -152,7 +207,8 @@ class mybot(commands.Bot):
             await message.channel.send("amongus", delete_after=10)
 
         elif (bot.user in message.mentions) and message_in.lower().find('prefix') != -1:
-            embed = discord.Embed(title=f"YO :wave:  my prefix is ", )
+            v =await self.get_prefix(message)
+            embed = discord.Embed(title=f"YO :wave:  my prefix is {v}", )
 
             await message.channel.send(embed=embed)
         elif bot.user in message.mentions:
@@ -168,7 +224,7 @@ class mybot(commands.Bot):
                 await message.channel.send(f'ur mom', delete_after=11)
 
 
-            elif message_in.lower().find('hi') != -1 or message_in.lower().find(
+            elif message_in.lower().find('hi') != -1 or message_in.lower().find('helo') != -1 or message_in.lower().find('sup') != -1  or message_in.lower().find(
                     'hello') != -1 or message_in.lower().find('sup') != -1 or message_in.lower().find(
                 'yo') != -1 or message_in.lower().find('hola') != -1 or message_in.lower().find(
                 'ello') != -1 or message_in.lower().find('yes') != -1:
@@ -200,11 +256,14 @@ class mybot(commands.Bot):
 
         await bot.process_commands(message)
 
+
+
 """===================================================================================================="""
 token = os.environ['TOKEN']
 bot = mybot()
 bot.remove_command("help")
 bot.run(token)
+
 
 
 
