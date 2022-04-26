@@ -155,6 +155,7 @@ fabric.properties
 # gifs
 main.sqlite
 *.json
+!spec/*.json
 *.gif
 *.sqlite
 
