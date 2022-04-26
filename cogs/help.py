@@ -29,6 +29,7 @@ class help(commands.Cog):
         await ctx.send(embed=em)
 
 #===================================mod==help==command============================================================================
+
     @help.command()
     async def mod(self,ctx):
         em = discord.Embed(title="__**mod plugins**__",description="**``$kick <user> <reason optional>``**"

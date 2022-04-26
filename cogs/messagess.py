@@ -64,7 +64,7 @@ class messagess(commands.Cog ,):
 
         total = sorted(total, reverse=True)
 
-        em = discord.Embed(title=f'Top {x} active members in {ctx.guild.name}',colour=discord.Colour.red())
+        em = discord.Embed(title=f'Top 10 active members in {ctx.guild.name}',colour=discord.Colour.red())
 
         index = 1
         for amt in total:

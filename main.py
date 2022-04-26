@@ -3,17 +3,26 @@ import discord
 from discord import app_commands, role
 from discord.ext import commands , tasks
 import os
+from discord import ui
 from discord.utils import get
 import aiohttp
 import random
 from glob import glob
+from datetime import datetime
+import datetime
 from itertools import cycle
 import json
 import sqlite3
-from cogs.normal import PersistentView
 import asyncpg
+import dotenv
 from asyncpg.pool import create_pool
 import asyncio
+import decouple
+import warnings
+import psycopg2
+import motor.motor_asyncio
+
+from cogs.normal import PersistentView
 
 COGS = [path.split("\\")[-1][:-3] for path in glob("./cogs/*.py")]
 
@@ -21,7 +30,7 @@ COGS = [path.split("\\")[-1][:-3] for path in glob("./cogs/*.py")]
 
 """this is the mai n file that run the bot"""
 
-print(
+"""print(
 " eeeee e   e eeeee eeeee e    e    eeeee  eeeee eeeeeee \n "
 "8     8   8 8     8     8    8    8    8 8   8   88  \n " 
 "8eeee 8   8 8eeee 8eeee 8eeee8    8eee8e 8   8   88  \n"
@@ -30,7 +39,7 @@ print(
 
 
 input("are you a robot ?")
-
+"""
 
 class Ready(object):
     def __init__(self):
@@ -68,13 +77,6 @@ def get_prefix(client, message): ##first we define get_prefix
         return
 
 
-# async def create_db_pool():
-
-
-    # self.bot.db = await asyncpg.create_pool(database= "discord", user="postgress", password="galax0")
-    # bot.db = await asyncpg.create_pool(dsn='postgres://postgres:galax0@localhost:5432/discord')
-    # conn = await asyncpg.connect(user='postgres', password='galax0',
-    #                              database='discord', host='127.0.0.1')
 
 
 
@@ -88,19 +90,18 @@ class mybot(commands.Bot):
             case_insensitive= True,
             intents=discord.Intents.all(),
             application_id = 953274927027458148)
+
+
         #we use this so the bot doesn't sync commands more than once
 
-
-
-
-    #setup cogs
     async def setup_hook(self):
         print("setting everything up.....")
         """this code load the cogs and commands files"""
         self.add_view(PersistentView())
-        COGS = ["normal","messagess","randomapi","calc command","example","error handler"]
-        print("loading cogs ....")
 
+
+        COGS = ["setup2","normal","messagess","randomapi","economy","example","error handler"]
+        print("loading cogs ....")
         for cog in COGS:
             await self.load_extension(f"cogs.{cog}")
             await bot.tree.sync()
@@ -109,19 +110,17 @@ class mybot(commands.Bot):
             print(f"{cog} loaded    >>>>>>>>")
         print("setup comelete ...")
 
-
-
-
-
     #inform that bot is ready, online
     async def on_ready(self):
         """print client is ready on ready"""
-        """conn = psycopg2.connect()
+        print("setting up database")
+        """conn = psycopg2.connect(dsn="")
         cur = conn.cursor()
-        cur.execute("CREATE TABLE student ();")
+        cur.execute("CREATE TABLE IF NOT EXISTS verify (guild_id BIGINT, role_id BIGINT);")
         conn.commit()
         cur.close()
         conn.close()"""
+        print("created table")
         self.change_status.start()
         print("status loop complete")
         print(f"bot is logged as {bot.user}")
@@ -131,11 +130,10 @@ class mybot(commands.Bot):
 
 
 
-
     @tasks.loop(seconds=3600)
     async def change_status(self):
         status = cycle(["do not disturb me :)",'$help', 'Green apple', 'amongus', 'SUS', 'bruh', 'ur mom', '0101000101', 'game of life','what do you know about about rolling down in the deep'])
-        await bot.change_presence(status=discord.Status.online,activity=discord.Activity(type=discord.ActivityType.watching,name=next(status)))
+        await bot.change_presence(status=discord.Status.online,activity=discord.Activity(type=discord.ActivityType.watching,name=next(status),url="https://sussybot.xyz"))
 
 
 
@@ -152,6 +150,9 @@ class mybot(commands.Bot):
         channel = await bot.fetch_channel(960863076821905478)
         embed = discord.Embed(title=f"i joind the {guild.name} server")
         await channel.send(embed=embed)
+
+
+
 
 
 
@@ -258,11 +259,17 @@ class mybot(commands.Bot):
 
 
 
+
+
+
+
 """===================================================================================================="""
-token = os.environ['TOKEN']
+token = os.environ["TOKEN"]
 bot = mybot()
+
 bot.remove_command("help")
-bot.run(token)
+bot.run(token, reconnect=True)
+
 
 
 

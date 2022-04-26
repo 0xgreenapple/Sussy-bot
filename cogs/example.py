@@ -3,11 +3,11 @@ import datetime
 import warnings
 from discord.ext import commands, tasks
 from discord import app_commands
-
-
+import aiohttp
+import aiohttp
 
 class example(commands.Cog):
-    def __init__(self, bot: commands.Bot) -> None:
+    def __init__(self, bot: commands.Bot,) -> None:
         self.bot = bot
 
 
@@ -54,7 +54,7 @@ class example(commands.Cog):
         if reason == None:
             reason = " no reason provided"
         await ctx.guild.kick(member)
-        await ctx.channel.send(f'User {member.mention} has been kicked for {reason}')
+        await ctx.channel.send(f'User {member.mention} has been ejected for {reason}')
 
     @commands.command(description="ban a random user")
     @commands.has_permissions(ban_members=True)
@@ -84,7 +84,7 @@ class example(commands.Cog):
     @commands.command(aliases = ["gl"])
     @commands.is_owner()
     async def guild_leave(self, ctx ,guildid):
-        guild = await self.client.fetch_guild(int(guildid))
+        guild = await self.bot.fetch_guild(int(guildid))
         await guild.leave()
         embed = discord.Embed(title=f"i left the guild {guild.name} ")
         await ctx.send(embed = embed)
@@ -154,6 +154,7 @@ class example(commands.Cog):
                 await ctx.guild.unban(user)
                 await ctx.channel.send(f'Unbanned {user.mention}')
                 return'''
+
 
 
 

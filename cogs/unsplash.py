@@ -7,7 +7,7 @@ import random
 
 from requests import get
 from discord.ext import commands
-
+from discord import app_commands
 
 class unsplash(commands.Cog):
     def __init__(self, bot: commands.Bot) -> None:
@@ -45,6 +45,35 @@ class unsplash(commands.Cog):
             await ctx.send(embed1)
         except:
             await ctx.send("**i m dying**")
+
+    @app_commands.command(name="image")
+    @app_commands.checks.cooldown(1, 5, key=lambda j: (j.guild_id, j.user.id))
+    async def image_slash(self, interaction: discord.Interaction,*,message:str=None):
+        try:
+            unsplashID = os.environ['UNSPLASH_KEY']
+            embed4 = discord.Embed(title="", description="")
+            search_url = None
+            final_image = None
+            if message != None:
+                search_url = f'https://api.unsplash.com/search/photos?client_id={unsplashID}&query={message}&per_page=25'
+            else:
+                search_url = f'https://api.unsplash.com/photos/random?client_id={unsplashID}&count=2'
+
+            async with aiohttp.ClientSession() as cs:
+                async with cs.get(search_url) as r:
+                    res = await r.json()
+                    if message != None:
+                        final_image = res['results'][random.randint(0, 25)]['urls']['small']
+                    else:
+                        final_image = res[0]['urls']['small']
+
+                    embed4.set_image(url=final_image)
+                    await interaction.response.send_message(embed=embed4)
+        except IndexError:
+            embed1 = discord.Embed(title=f"there is no image called {message}")
+            await interaction.response.send_message(embed=embed1)
+        except:
+            await interaction.response.send_message("**i m dying**")
 
 
 

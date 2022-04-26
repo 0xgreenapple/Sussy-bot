@@ -4,11 +4,15 @@ import discord
 import datetime, time
 from datetime import datetime
 from datetime import timedelta
+
+import psycopg2
 from discord.ext import commands
+from discord.enums import TextStyle
 import psutil
 from discord.ext.commands import cooldown, BucketType, MemberConverter
 from discord import app_commands, role
-from discord.ui import Button , View
+from discord.ui import Button , View , TextInput
+from discord import ui
 import json
 from discord.utils import get
 import sqlite3
@@ -16,12 +20,14 @@ import sqlite3
 
 
 
-
 class PersistentView(discord.ui.View):
-    """def get_message(self,interaction: discord.Interaction ):  ##first we define get_prefix
-        with open('role.json', 'r') as f:  ##we open and read the prefixes.json, assuming it's in the same file
-            msg = json.load(f)  # load the json as prefixes
-        return msg[str(interaction.guild.id)]"""
+    def get_message(self,interaction: discord.Interaction ):  ##first we define get_prefix
+        conn = psycopg2.connect(dsn="postgres://postgres:galax0@localhost:5432/postgres")
+        cur = conn.cursor()
+        cur.execute(f"SELECT role_id FROM verify WHERE guild_id = {interaction.guild.id}")
+        result = cur.fetchone()
+        logging.warning(result)
+        return result
 
 
 
@@ -175,13 +181,17 @@ class normal(commands.Cog):
         else:
             embed = discord.Embed(title="something went wrong :face_with_raised_eyebrow: ")
             await ctx.send(embed=embed)
+
+
     @commands.command()
     @commands.cooldown(1,5, BucketType.user)
     async def membercount(self, ctx):
         time = datetime.utcnow().strftime(r"%I:%M %p")
-        emed = discord.Embed(title=f"members : {ctx.message.guild.member_count}")
+        emed = discord.Embed(title=f"Members : ``{ctx.message.guild.member_count}``")
         emed.set_footer(text=f"today at {time}")
         await ctx.send(embed = emed)
+
+
 
     @membercount.error
     async def membercounterror(self,ctx ,error):
@@ -238,6 +248,11 @@ class normal(commands.Cog):
         button.callback = button_callback
         view.add_item(button)
         await interaction.response.send_message(embed = embed11,  view=view)
+
+
+
+
+
 
 
 
@@ -374,7 +389,7 @@ class normal(commands.Cog):
             await interaction.response.send_message(f"{error}", ephemeral=True)
         else:
             await interaction.response.send_message(
-                "something went wrong do $help or report for bugs by doingn $bugs <bugs>", ephemeral=True)
+                "something went wrong do $help or report for bugs by doinn $bugs <bugs>", ephemeral=True)
 
     #stats prefix command
     @commands.command()
@@ -425,14 +440,36 @@ class normal(commands.Cog):
     #status prefix command
     @commands.command()
     @cooldown(1, 3, BucketType.user)
+    async def status2(self, ctx):
+        a = round(psutil.virtual_memory().available * 100 / psutil.virtual_memory().total)
+        z = 100 - a
+
+        uptime = (timedelta(seconds=int(round(time.time() - startTime))))
+
+        embed = discord.Embed(title="Sussy-bot Status :", description="")
+        embed.add_field(name=":<:2123:965984586322567218> Shard[0]", value=f'<:space:965978649872441364> **version: ``Alpha``**\n<:space:965978649872441364>**ping : ``{round(self.bot.latency * 1000)}ms``** \n <:space:965978649872441364> **memory : ``{z}% used``** \n <:space:965978649872441364>**servers : ``{len(self.bot.guilds)}``** \n<:space:965978649872441364>**uptime : ``{uptime}``**')
+        """embed.add_field(name="Memory ", value=f'{z}% used', )
+        embed.add_field(name="Servers", value=f"{len(self.bot.guilds)}", )
+        embed.add_field(name="Uptime", value=uptime, )
+        "embed.set_thumbnail(url=self.client.user.avatar_url)"
+        embed.set_author(name="sussy-bot", icon_url=self.bot.user.avatar.url)
+        await ctx.send(embed=embed)"""
+        await ctx.send(embed = embed)
+
+
+
+    @commands.command()
+    @cooldown(1, 3, BucketType.user)
     async def status(self,ctx):
 
         a = round(psutil.virtual_memory().available * 100 / psutil.virtual_memory().total)
         z = 100 - a
 
-        uptime = str(timedelta(seconds=int(round(time.time() - startTime))))
-        embed = discord.Embed(title="sussy-bot status | version alpha",description="")
-        embed.add_field(name="ping",value=f'{round(self.bot.latency * 1000)}ms')
+
+        uptime = (timedelta(seconds=int(round(time.time() - startTime))))
+
+        embed = discord.Embed(title="Sussy-bot Status :",description="")
+        embed.add_field(name="Shard[0]",value=f'{round(self.bot.latency * 1000)}ms')
         embed.add_field(name="Memory ",value=f'{z}% used',)
         embed.add_field(name="Servers",value=f"{len(self.bot.guilds)}",)
         embed.add_field(name="Uptime",value=uptime,)
@@ -775,17 +812,26 @@ class normal(commands.Cog):
 
     @commands.command()
     @commands.has_permissions(administrator=True)  # permissions
-    async def set_v(self,ctx,*,role):
-        with open('role.json', 'r') as f:  # read the prefix.json file
-            msg = json.load(f)
-        msg[str(ctx.guild.id)] = role
-        with open('role.json', 'w') as f:  # write in the prefix.json "message.guild.id": "bl!"
-            json.dump(msg, f, indent=4)
-
+    async def set_v(self,ctx,*,role:discord.Role):
+        conn = psycopg2.connect(dsn="postgres://postgres:galax0@localhost:5432/postgres")
+        cur = conn.cursor()
+        cur.execute(f"SELECT role_id FROM verify WHERE guild_id = {ctx.guild.id}")
+        result = cur.fetchone()
+        if result is None:
+            sql = ("INSERT INTO verify(guild_id, role_id) VALUES(?,?)")
+            val = (ctx.guild.id, role.id)
+            cur.execute(sql, val)
+            await ctx.send(f"verification tole has been set to {role.name}")
+        elif result is not None:
+            sql = ("UPDATE verify SET role_id = ? WHERE guild_id = ?")
+            val = (role.id,ctx.guild.id)
+            cur.execute(sql, val)
+            await ctx.send(f"verification role has been updated to {role.mention}")
+        conn.commit()
+        cur.close()
+        conn.close()
         embed11 = discord.Embed(title="click verify to verify yourself")
-
         view = PersistentView()
-
         await ctx.send(embed=embed11, view=view)
 
         """if role.position > ctx.author.top_role.position:  # if the role is above users top role it sends error
@@ -824,7 +870,7 @@ class normal(commands.Cog):
         view = PersistentView()
         await ctx.send("What's your favourite colour?", view=view)
 
-    @commands.command()
+    """@commands.command()
     @commands.has_permissions(administrator=True)  # permissions
     async def verify_set(self, ctx ,channel: discord.TextChannel, *, role):
         db = sqlite3.connect('main.sqlite')
@@ -846,10 +892,21 @@ class normal(commands.Cog):
         view = PersistentView()
 
         await channel.send(embed=embed11, view=view)
-        await ctx.send("verification setup complete")
+        await ctx.send("verification setup complete")"""
 
+    ans = ui.TextInput(label="asdasdasd", style=discord.TextStyle.short, placeholder="yes", default="yes/no",
+                       required=True, max_length=8)
 
+    async def on_submit(self, interaction: discord.Interaction):
+        embed = discord.Embed(title=self.title, description=f"{self.ans.label} \n {self.ans}", timestamp=datetime.now(),
+                              color=discord.Color.red())
+        embed.set_author(name=interaction.user, icon_url=interaction.user.avatar)
+        await interaction.response.send_message(embed=embed)
 
+    @commands.command()
+    async def send_ch(self, ctx, channel :discord.TextChannel, *, message:str):
+        await channel.send(message)
+        await ctx.send("done")
 async def setup(bot: commands.Bot ) -> None:
     await bot.add_cog(
         normal(bot))
