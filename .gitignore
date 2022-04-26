@@ -81,6 +81,11 @@ celerybeat-schedule
 # dotenv
 .env
 dot.env
+command.json
+gay.gif
+image.gif
+jail.gif
+message.json
 .DS_Store
 
 # virtualenv
@@ -154,9 +159,5 @@ crashlytics-build.properties
 fabric.properties
 # gifs
 main.sqlite
-*.json
-!spec/*.json
-*.gif
-*.sqlite
 
 
