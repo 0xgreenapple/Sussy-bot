@@ -154,6 +154,8 @@ crashlytics-build.properties
 fabric.properties
 # gifs
 main.sqlite
-.json
+*.json
+*.gif
+*.sqlite
 
 
