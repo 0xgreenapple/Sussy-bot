@@ -4,10 +4,7 @@ import discord
 import datetime, time
 from datetime import datetime
 from datetime import timedelta
-
-import psycopg2
 from discord.ext import commands
-from discord.enums import TextStyle
 import psutil
 from discord.ext.commands import cooldown, BucketType, MemberConverter
 from discord import app_commands, role
@@ -809,29 +806,7 @@ class normal(commands.Cog):
 
 
 
-    @commands.command()
-    @commands.has_permissions(administrator=True)  # permissions
-    async def set_v(self,ctx,*,role:discord.Role):
-        conn = psycopg2.connect(dsn="postgres://postgres:galax0@localhost:5432/postgres")
-        cur = conn.cursor()
-        cur.execute(f"SELECT role_id FROM verify WHERE guild_id = {ctx.guild.id}")
-        result = cur.fetchone()
-        if result is None:
-            sql = ("INSERT INTO verify(guild_id, role_id) VALUES(?,?)")
-            val = (ctx.guild.id, role.id)
-            cur.execute(sql, val)
-            await ctx.send(f"verification tole has been set to {role.name}")
-        elif result is not None:
-            sql = ("UPDATE verify SET role_id = ? WHERE guild_id = ?")
-            val = (role.id,ctx.guild.id)
-            cur.execute(sql, val)
-            await ctx.send(f"verification role has been updated to {role.mention}")
-        conn.commit()
-        cur.close()
-        conn.close()
-        embed11 = discord.Embed(title="click verify to verify yourself")
-        view = PersistentView()
-        await ctx.send(embed=embed11, view=view)
+
 
         """if role.position > ctx.author.top_role.position:  # if the role is above users top role it sends error
             return await ctx.send('**:x: | That role is above your top role!**')

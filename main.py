@@ -6,8 +6,6 @@ import random
 from glob import glob
 from itertools import cycle
 import json
-
-
 from cogs.normal import PersistentView
 
 COGS = [path.split("\\")[-1][:-3] for path in glob("./cogs/*.py")]
@@ -62,8 +60,6 @@ class mybot(commands.Bot):
 
     """the code that run the bot and load prefix"""
     def __init__(self):
-        """credentials = {"user": "postgres", "password": "galax0", "database": "postgres", "host": "127.0.0.1"}
-        db = await asyncpg.create_pool(**credentials)"""
         super().__init__(
             command_prefix =(get_prefix),
             case_insensitive= True,

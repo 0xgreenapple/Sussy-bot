@@ -2,7 +2,6 @@ import asyncio
 
 import discord
 import datetime
-import warnings
 from discord.ext import commands, tasks
 from discord import app_commands
 from discord.app_commands import Choice
