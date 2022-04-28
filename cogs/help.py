@@ -1,8 +1,6 @@
 import asyncio
 
 import discord
-import datetime
-import warnings
 from discord.ext import commands, tasks
 
 

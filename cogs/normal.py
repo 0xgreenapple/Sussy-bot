@@ -13,7 +13,6 @@ from discord.ext.commands import cooldown, BucketType, MemberConverter
 from discord import app_commands, role
 from discord.ui import Button , View , TextInput
 from discord import ui
-import json
 from discord.utils import get
 import sqlite3
 

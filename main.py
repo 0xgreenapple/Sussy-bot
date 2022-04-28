@@ -1,28 +1,12 @@
 import logging
 import discord
-from discord import app_commands, role
-
 from discord.ext import commands , tasks
-
 import os
-from discord import ui
-from discord.utils import get
-import aiohttp
 import random
 from glob import glob
-from datetime import datetime
-import datetime
 from itertools import cycle
 import json
-import sqlite3
-import asyncpg
-import dotenv
-from asyncpg.pool import create_pool
-import asyncio
-import decouple
-import warnings
-import psycopg2
-import motor.motor_asyncio
+
 
 from cogs.normal import PersistentView
 

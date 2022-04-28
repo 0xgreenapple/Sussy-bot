@@ -1,11 +1,7 @@
 import discord
-import os
-
-from discord.app_commands import tree
 from discord.ext import commands
 from discord import app_commands
-from discord.errors import Forbidden
-from itertools import cycle
+
 
 
 

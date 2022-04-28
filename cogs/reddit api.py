@@ -3,7 +3,6 @@ import os
 import discord
 import aiohttp
 import random
-from requests import get
 from discord.ext import commands
 
 

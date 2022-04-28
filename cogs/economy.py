@@ -1,9 +1,7 @@
 import discord
-from discord import app_commands
 from discord.ext import commands
 import random
 import json
-import motor.motor_asyncio
 
 import logging
 
@@ -202,11 +200,6 @@ class economy(commands.Cog):
                 json.dump(users, f)
             await ctx.send(f"you have {nameitem}")
 
-    @commands.command()
-    async def beger(self,ctx):
-        db = self.bot.mongoConnect["sussybot"]
-        collection = db["verify"]
-        erning = random.randint(0,100)
 async def setup(bot: commands.Bot ) -> None:
     await bot.add_cog(
         economy(bot))
