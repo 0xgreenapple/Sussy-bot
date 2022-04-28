@@ -1,7 +1,9 @@
 import logging
 import discord
 from discord import app_commands, role
+
 from discord.ext import commands , tasks
+
 import os
 from discord import ui
 from discord.utils import get
@@ -30,16 +32,12 @@ COGS = [path.split("\\")[-1][:-3] for path in glob("./cogs/*.py")]
 
 """this is the mai n file that run the bot"""
 
-"""print(
+print(
 " eeeee e   e eeeee eeeee e    e    eeeee  eeeee eeeeeee \n "
 "8     8   8 8     8     8    8    8    8 8   8   88  \n " 
 "8eeee 8   8 8eeee 8eeee 8eeee8    8eee8e 8   8   88  \n"
 '     8 8   8     8     8   88      8    8 8   8   88  \n'
 " 8ee88 88ee8 8ee88 8ee88   88      88eee8 8eee8   88  \n")
-
-
-input("are you a robot ?")
-"""
 
 class Ready(object):
     def __init__(self):
@@ -48,8 +46,6 @@ class Ready(object):
     def ready_up(self,cog):
         setattr(self,cog,True)
         print(f"{cog} is ready")
-
-
     def all_ready(self):
         return all([getattr(self, cog) for cog in COGS])
 
@@ -77,14 +73,13 @@ def get_prefix(client, message): ##first we define get_prefix
         return
 
 
-
-
-
-
-
+#class bot the main code
 class mybot(commands.Bot):
+
     """the code that run the bot and load prefix"""
     def __init__(self):
+        """credentials = {"user": "postgres", "password": "galax0", "database": "postgres", "host": "127.0.0.1"}
+        db = await asyncpg.create_pool(**credentials)"""
         super().__init__(
             command_prefix =(get_prefix),
             case_insensitive= True,
@@ -92,50 +87,31 @@ class mybot(commands.Bot):
             application_id = 953274927027458148)
 
 
-        #we use this so the bot doesn't sync commands more than once
 
+    #load cogs from other files
     async def setup_hook(self):
         print("setting everything up.....")
-        """this code load the cogs and commands files"""
         self.add_view(PersistentView())
-
-
-        COGS = ["setup2","normal","messagess","randomapi","economy","example","error handler"]
+        COGS = ["normal","error handler","randomapi","Tenor","calc command","messagess","unsplash","example"]
         print("loading cogs ....")
         for cog in COGS:
             await self.load_extension(f"cogs.{cog}")
             await bot.tree.sync()
-
-
             print(f"{cog} loaded    >>>>>>>>")
         print("setup comelete ...")
 
     #inform that bot is ready, online
     async def on_ready(self):
-        """print client is ready on ready"""
-        print("setting up database")
-        """conn = psycopg2.connect(dsn="")
-        cur = conn.cursor()
-        cur.execute("CREATE TABLE IF NOT EXISTS verify (guild_id BIGINT, role_id BIGINT);")
-        conn.commit()
-        cur.close()
-        conn.close()"""
         print("created table")
         self.change_status.start()
         print("status loop complete")
         print(f"bot is logged as {bot.user}")
 
-
-
-
-
-
+    #the code that change bot status in every hours.
     @tasks.loop(seconds=3600)
     async def change_status(self):
         status = cycle(["do not disturb me :)",'$help', 'Green apple', 'amongus', 'SUS', 'bruh', 'ur mom', '0101000101', 'game of life','what do you know about about rolling down in the deep'])
         await bot.change_presence(status=discord.Status.online,activity=discord.Activity(type=discord.ActivityType.watching,name=next(status),url="https://sussybot.xyz"))
-
-
 
     #load the prefix on guild join
     async def on_guild_join(self,guild):  # when the bot joins the guild
@@ -151,17 +127,12 @@ class mybot(commands.Bot):
         embed = discord.Embed(title=f"i joind the {guild.name} server")
         await channel.send(embed=embed)
 
-
-
-
-
-
+    #pop the guild prefix on leaving from the guild
     async def on_guild_remove(self,guild):  # when the bot is removed from the guild
         with open('prefixes.json', 'r') as f:  # read the file
             prefixes = json.load(f)
 
         prefixes.pop(str(guild.id))  # find the guild.id that bot was removed from
-
         with open('prefixes.json', 'w') as f:  # deletes the guild.id as well as its prefix
             json.dump(prefixes, f, indent=4)
         channel = await bot.fetch_channel(960863137706442812)
@@ -170,12 +141,9 @@ class mybot(commands.Bot):
 
 
 
-
-
-
-
+    #this is the code that make the bot automaticly respose on ping
     async def on_message(self,message):
-
+        """the random words that bot sent"""
         a = ["keep your mouth close",
              " dont disturb me :)",
              "stfu",
@@ -199,7 +167,7 @@ class mybot(commands.Bot):
              "retard"
         ]
         message_in = message.content
-
+        #logging
         print(f"{message.guild} {message.channel} : {message.author}: {message.author.display_name}: {message.content}")
 
         if message.author.bot:
@@ -224,49 +192,38 @@ class mybot(commands.Bot):
                 'fk') != -1 or message_in.lower().find('fuck') != -1:
                 await message.channel.send(f'ur mom', delete_after=11)
 
-
             elif message_in.lower().find('hi') != -1 or message_in.lower().find('helo') != -1 or message_in.lower().find('sup') != -1  or message_in.lower().find(
                     'hello') != -1 or message_in.lower().find('sup') != -1 or message_in.lower().find(
                 'yo') != -1 or message_in.lower().find('hola') != -1 or message_in.lower().find(
                 'ello') != -1 or message_in.lower().find('yes') != -1:
                 await message.channel.send(f'**hello there how are you?**')
 
-
             elif message_in.lower().find('how are you') != -1:
                 await message.channel.send(f'I can smell sus,btw how about you {message.author.display_name} ?')
-
 
             elif message_in.lower().find('ur mom') != -1:
                 await message.channel.send(f'ur mom in my basement, {message.author.display_name}')
 
-
             elif message_in.lower().find('ur dad') != -1:
                 await message.channel.send(f'shut up YOU, {message.author.display_name}')
-
 
             elif message_in.lower().find('fuck you') != -1:
                 await message.channel.send(f'f you too, {message.author.display_name}')
 
-
             elif message_in.lower().find('what do you do for living') != -1:
                 await message.channel.send(f'i eat bananas , {message.author.display_name}')
 
-
             else:
                 await message.channel.send(f'{random.choice(a)}, **{message.author.display_name}**!')
-
         await bot.process_commands(message)
-
-
-
 
 
 
 
 """===================================================================================================="""
 token = os.environ["TOKEN"]
-bot = mybot()
 
+bot = mybot()
 bot.remove_command("help")
 bot.run(token, reconnect=True)
 
