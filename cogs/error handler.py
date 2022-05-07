@@ -34,10 +34,8 @@ class error_handler(commands.Cog):
         else:
             embed = discord.Embed(title="something went wrong report the bug by doing ``$bug <bug>``| ")
 
-        await ctx.message.add_reaction("🚫")
-        await ctx.send(embed=embed, delete_after=10)
+        await ctx.send(embed=embed,ephemeral=True)
         await ctx.message.delete(delay=15)
-
     async def on_app_command_error(self,interaction: discord.Interaction,error: app_commands.AppCommandError):
         if isinstance(error,app_commands.CommandOnCooldown):
             embed = discord.Embed(title="Command On cooldown",description=f"Woah stop command is Currently on Cool down try again in {round(error.retry_after,1)}",
