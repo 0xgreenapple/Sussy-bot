@@ -1,5 +1,5 @@
 import logging
-
+from bot import SussyBot
 import discord
 import datetime, time
 from datetime import datetime
@@ -15,7 +15,7 @@ import sqlite3
 
 
 class normal(commands.Cog):
-    def __init__(self, bot: commands.Bot) -> None:
+    def __init__(self, bot: SussyBot) -> None:
         self.bot = bot
         global startTime
 
@@ -506,7 +506,7 @@ class normal(commands.Cog):
     @app_commands.command(name="clicktest", description="this is test")
     @app_commands.checks.cooldown(1, 5, key=lambda j: (j.guild_id, j.user.id))
     async def click(self, interaction: discord.Interaction):
-        button = Button(label="clcik me!", style=discord.ButtonStyle.green, emoji="<:troll_sad:938264721268809789>")
+        button = Button(label="click me!", style=discord.ButtonStyle.green, emoji="<:troll_sad:938264721268809789>")
         view = View()
 
         async def button_callback(interaction):
@@ -524,8 +524,7 @@ class normal(commands.Cog):
         # Call this method once just to store it somewhere.
         # In a more complicated program you might fetch the message_id from a database for use later.
         # However this is outside of the scope of this simple example.
-        view = PersistentView()
-        await ctx.send("What's your favourite colour?", view=view)
+        await ctx.send("What's your favourite colour?")
 
     """@commands.command()
     @commands.has_permissions(administrator=True)  # permissions
@@ -551,14 +550,9 @@ class normal(commands.Cog):
         await channel.send(embed=embed11, view=view)
         await ctx.send("verification setup complete")"""
 
-    ans = ui.TextInput(label="asdasdasd", style=discord.TextStyle.short, placeholder="yes", default="yes/no",
-                       required=True, max_length=8)
 
-    async def on_submit(self, interaction: discord.Interaction):
-        embed = discord.Embed(title=self.title, description=f"{self.ans.label} \n {self.ans}", timestamp=datetime.now(),
-                              color=discord.Color.red())
-        embed.set_author(name=interaction.user, icon_url=interaction.user.avatar)
-        await interaction.response.send_message(embed=embed)
+
+
 
     @commands.command()
     async def send_ch(self, ctx, channel: discord.TextChannel, *, message: str):
@@ -566,6 +560,6 @@ class normal(commands.Cog):
         await ctx.send("done")
 
 
-async def setup(bot: commands.Bot) -> None:
+async def setup(bot: SussyBot) -> None:
     await bot.add_cog(
         normal(bot))

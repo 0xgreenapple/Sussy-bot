@@ -26,6 +26,7 @@ var/
 *.egg-info/
 .installed.cfg
 *.egg
+data/
 
 # PyInstaller
 #  Usually these files are written by a python script from a template
@@ -81,11 +82,7 @@ celerybeat-schedule
 # dotenv
 .env
 dot.env
-command.json
-gay.gif
-image.gif
-jail.gif
-message.json
+data/command.json
 .DS_Store
 
 # virtualenv
@@ -157,7 +154,6 @@ com_crashlytics_export_strings.xml
 crashlytics.properties
 crashlytics-build.properties
 fabric.properties
-# gifs
 main.sqlite
 
 

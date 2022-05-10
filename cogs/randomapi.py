@@ -10,10 +10,10 @@ from discord.ui import Button , View
 from discord.ext.commands import cooldown , BucketType
 from discord.app_commands import Choice
 from typing import Optional
-
+from bot import SussyBot
 
 class randomapi(commands.Cog):
-    def __init__(self, bot: commands.Bot) -> None:
+    def __init__(self, bot: SussyBot) -> None:
         self.bot = bot
 
     """all random apis here"""
@@ -439,13 +439,13 @@ class randomapi(commands.Cog):
             resp = get(f"{search_url[slice_object]}")
 
             if resp.status_code == 200:
-                open('trigger.gif', 'wb').write(resp.content)
-                d = open("trigger.gif", "r+")
+                open(r'..\\data\\trigger.gif', 'wb').write(resp.content)
+                d = open(r"..\\data\\trigger.gif", "r+")
                 file_to_send = f'{os.getcwd()}/{d.name}'
                 logging.warning(file_to_send)
 
 
-                await interaction.response.send_message(file=discord.File("trigger.gif"))
+                await interaction.response.send_message(file=discord.File(r"..\\data\\trigger.gif"))
 
 
             elif resp.status_code != 200:
@@ -456,13 +456,13 @@ class randomapi(commands.Cog):
             resp = get(f"{search_url[slice_object]}")
 
             if resp.status_code == 200:
-                open('trigger.gif', 'wb').write(resp.content)
-                d = open("trigger.gif", "r+")
+                open(r'..\\data\\trigger.gif', 'wb').write(resp.content)
+                d = open(r"..\\data\\trigger.gif", "r+")
                 file_to_send = f'{os.getcwd()}/{d.name}'
                 logging.warning(file_to_send)
 
 
-                await interaction.response.send_message(file=discord.File("trigger.gif"))
+                await interaction.response.send_message(file=discord.File(r"..\\data\\trigger.gif"))
 
 
             elif resp.status_code != 200:
@@ -484,13 +484,13 @@ class randomapi(commands.Cog):
             resp = get(f"{search_url[slice_object]}")
 
             if resp.status_code == 200:
-                open('trigger.gif', 'wb').write(resp.content)
-                d = open("trigger.gif", "r+")
+                open(r'..\\data\\trigger.gif', 'wb').write(resp.content)
+                d = open(r"..\\data\\trigger.gif", "r+")
                 file_to_send = f'{os.getcwd()}/{d.name}'
                 logging.warning(file_to_send)
 
                 await ctx.message.add_reaction("✅")
-                await ctx.send(file=discord.File("trigger.gif"))
+                await ctx.send(file=discord.File(r"..\\data\\trigger.gif"))
                 await ctx.message.clear_reaction("✅")
 
             elif resp.status_code != 200:
@@ -501,13 +501,13 @@ class randomapi(commands.Cog):
             resp = get(f"{search_url[slice_object]}")
 
             if resp.status_code == 200:
-                open('trigger.gif', 'wb').write(resp.content)
-                d = open("trigger.gif", "r+")
+                open(r'..\\data\\trigger.gif', 'wb').write(resp.content)
+                d = open(r"..\\data\\trigger.gif", "r+")
                 file_to_send = f'{os.getcwd()}/{d.name}'
                 logging.warning(file_to_send)
 
                 await ctx.message.add_reaction("✅")
-                await ctx.send(file=discord.File("trigger.gif"))
+                await ctx.send(file=discord.File(r"..\\data\\trigger.gif"))
                 await ctx.message.clear_reaction("✅")
 
             elif resp.status_code != 200:
@@ -527,13 +527,13 @@ class randomapi(commands.Cog):
             resp = get(f"{search_url[slice_object]}")
 
             if resp.status_code == 200:
-                open('jail.gif', 'wb').write(resp.content)
-                d = open("jail.gif", "r+")
+                open(r'..\\data\\jail.gif', 'wb').write(resp.content)
+                d = open(r"..\\data\\jail.gif", "r+")
                 file_to_send = f'{os.getcwd()}/{d.name}'
                 logging.warning(file_to_send)
 
 
-                await interaction.response.send_message(file=discord.File("jail.gif"))
+                await interaction.response.send_message(file=discord.File(r"..\\data\\jail.gif"))
 
 
             elif resp.status_code != 200:
@@ -544,14 +544,14 @@ class randomapi(commands.Cog):
             resp = get(f"{search_url[slice_object]}")
 
             if resp.status_code == 200:
-                open('jail.gif', 'wb').write(resp.content)
-                d = open("jail.gif", "r+")
+                open(r'..\\data\\jail.gif', 'wb').write(resp.content)
+                d = open(r"..\\data\\jail.gif", "r+")
                 file_to_send = f'{os.getcwd()}/{d.name}'
                 logging.warning(file_to_send)
 
 
 
-                await interaction.response.send_message(file=discord.File("jail.gif"))
+                await interaction.response.send_message(file=discord.File(r"..\\data\\jail.gif"))
 
 
             elif resp.status_code != 200:
@@ -575,13 +575,13 @@ class randomapi(commands.Cog):
             resp = get(f"{search_url[slice_object]}")
 
             if resp.status_code == 200:
-                open('jail.gif', 'wb').write(resp.content)
-                d = open("jail.gif", "r+")
+                open(r'..\\data\\jail.gif', 'wb').write(resp.content)
+                d = open(r"..\\data\\jail.gif", "r+")
                 file_to_send = f'{os.getcwd()}/{d.name}'
                 logging.warning(file_to_send)
 
                 await ctx.message.add_reaction("✅")
-                await ctx.send(file=discord.File("jail.gif"))
+                await ctx.send(file=discord.File(r"..\\data\\jail.gif"))
                 await ctx.message.clear_reaction("✅")
 
             elif resp.status_code != 200:
@@ -592,14 +592,14 @@ class randomapi(commands.Cog):
             resp = get(f"{search_url[slice_object]}")
 
             if resp.status_code == 200:
-                open('jail.gif', 'wb').write(resp.content)
-                d = open("jail.gif", "r+")
+                open(r'..\\data\\jail.gif', 'wb').write(resp.content)
+                d = open(r"..\\data\\jail.gif", "r+")
                 file_to_send = f'{os.getcwd()}/{d.name}'
                 logging.warning(file_to_send)
 
                 await ctx.message.add_reaction("✅")
 
-                await ctx.send(file=discord.File("jail.gif"))
+                await ctx.send(file=discord.File(r"..\\data\\jail.gif"))
                 await ctx.message.clear_reaction("✅")
 
             elif resp.status_code != 200:
@@ -615,11 +615,11 @@ class randomapi(commands.Cog):
             resp = get(f"{search_url[slice_object]}")
 
             if resp.status_code == 200:
-                open('gay.gif', 'wb').write(resp.content)
-                d = open("gay.gif", "r+")
+                open(r'..\\data\\gay.gif', 'wb').write(resp.content)
+                d = open(r"..\\data\\gay.gif", "r+")
                 file_to_send = f'{os.getcwd()}/{d.name}'
 
-                await interaction.response.send_message(file=discord.File("gay.gif"))
+                await interaction.response.send_message(file=discord.File(r"..\\data\\gay.gif"))
 
             elif resp.status_code != 200:
                 await interaction.response.send_message("api is down",ephemeral=True)
@@ -629,11 +629,11 @@ class randomapi(commands.Cog):
             resp = get(f"{search_url[slice_object]}")
 
             if resp.status_code == 200:
-                open('gay.gif', 'wb').write(resp.content)
-                d = open("gay.gif", "r+")
+                open(r'..\\data\\gay.gif', 'wb').write(resp.content)
+                d = open(r"..\\data\\gay.gif", "r+")
                 file_to_send = f'{os.getcwd()}/{d.name}'
 
-                await interaction.response.send_message(file=discord.File("gay.gif"))
+                await interaction.response.send_message(file=discord.File(r"..\\data\\gay.gif"))
             elif resp.status_code != 200:
                 interaction.response.send_message("api is down",ephemeral=True)
 
@@ -653,12 +653,12 @@ class randomapi(commands.Cog):
             resp = get(f"{search_url[slice_object]}")
 
             if resp.status_code == 200:
-                open('gay.gif', 'wb').write(resp.content)
-                d = open("gay.gif", "r+")
+                open(r'..\\data\\', 'wb').write(resp.content)
+                d = open(r"..\\data\\gay.gif", "r+")
                 file_to_send = f'{os.getcwd()}/{d.name}'
 
                 await ctx.message.add_reaction("✅")
-                await ctx.send(file=discord.File("gay.gif"))
+                await ctx.send(file=discord.File(r"..\\data\\gay.gif"))
                 await ctx.message.clear_reaction("✅")
 
             elif resp.status_code != 200:
@@ -669,12 +669,12 @@ class randomapi(commands.Cog):
             resp = get(f"{search_url[slice_object]}")
 
             if resp.status_code == 200:
-                open('gay.gif', 'wb').write(resp.content)
-                d = open("gay.gif", "r+")
+                open(r'..\\data\\gay.gif', 'wb').write(resp.content)
+                d = open(r"..\\data\\gay.gif", "r+")
                 file_to_send = f'{os.getcwd()}/{d.name}'
 
                 await ctx.message.add_reaction("✅")
-                await ctx.send(file=discord.File("gay.gif"))
+                await ctx.send(file=discord.File(r"..\\data\\gay.gif"))
                 await ctx.message.clear_reaction("✅")
 
             elif resp.status_code != 200:
@@ -693,11 +693,11 @@ class randomapi(commands.Cog):
             slice_object = slice(-10)
             resp = get(f"{search_url[slice_object]}")
             if resp.status_code == 200:
-                open('glass.gif', 'wb').write(resp.content)
-                d = open("glass.gif", "r+")
+                open(r'..\\data\\glass.gif', 'wb').write(resp.content)
+                d = open(r"..\\data\\glass.gif", "r+")
                 file_to_send = f'{os.getcwd()}/{d.name}'
 
-                await interaction.response.send_message(file=discord.File("glass.gif"))
+                await interaction.response.send_message(file=discord.File(r"..\\data\\glass.gif"))
 
             elif resp.status_code != 200:
                 await interaction.response.send_message("api is down",ephemeral=True)
@@ -706,20 +706,20 @@ class randomapi(commands.Cog):
             slice_object = slice(-10)
             resp = get(f"{search_url[slice_object]}")
             if resp.status_code == 200:
-                open('glass.gif', 'wb').write(resp.content)
-                d = open("glass.gif", "r+")
+                open(r'..\\data\\glass.gif', 'wb').write(resp.content)
+                d = open(r"..\\data\\glass.gif", "r+")
                 file_to_send = f'{os.getcwd()}/{d.name}'
 
-                await interaction.response.send_message(file=discord.File("glass.gif"))
+                await interaction.response.send_message(file=discord.File(r"..\\data\\glass.gif"))
             elif resp.status_code != 200:
                 await interaction.response.send_messgae("api is down",ephemeral=True)
 
-    @glass_slash.error
+    """@glass_slash.error
     async def glass_slash_error(self, interaction: discord.Interaction, error: app_commands.AppCommandError):
         if isinstance(error, app_commands.CommandOnCooldown):
             await interaction.response.send_message(error,ephemeral=True)
         else:
-            await interaction.response.send_message("something went wrong",ephemeral=True)
+            await interaction.response.send_message("something went wrong",ephemeral=True)"""
 
 
 
@@ -730,12 +730,12 @@ class randomapi(commands.Cog):
             slice_object = slice(-10)
             resp = get(f"{search_url[slice_object]}")
             if resp.status_code == 200:
-                open('glass.gif', 'wb').write(resp.content)
-                d = open("glass.gif", "r+")
+                open(r'..\\data\\glass.gif', 'wb').write(resp.content)
+                d = open(r"..\\data\\glass.gif", "r+")
                 file_to_send = f'{os.getcwd()}/{d.name}'
 
                 await ctx.message.add_reaction("✅")
-                await ctx.send(file=discord.File("glass.gif"))
+                await ctx.send(file=discord.File(r"..\\data\\glass.gif"))
                 await ctx.message.clear_reaction("✅")
 
             elif resp.status_code != 200:
@@ -745,12 +745,12 @@ class randomapi(commands.Cog):
             slice_object = slice(-10)
             resp = get(f"{search_url[slice_object]}")
             if resp.status_code == 200:
-                open('glass.gif', 'wb').write(resp.content)
-                d = open("glass.gif", "r+")
+                open(r'..\\data\\glass.gif', 'wb').write(resp.content)
+                d = open(r"..\\data\\glass.gif", "r+")
                 file_to_send = f'{os.getcwd()}/{d.name}'
 
                 await ctx.message.add_reaction("✅")
-                await ctx.send(file=discord.File("glass.gif"))
+                await ctx.send(file=discord.File(r"..\\data\\glass.gif"))
                 await ctx.message.clear_reaction("✅")
 
             elif resp.status_code != 200:
@@ -766,12 +766,12 @@ class randomapi(commands.Cog):
             slice_object = slice(-10)
             resp = get(f"{search_url[slice_object]}")
             if resp.status_code == 200:
-                open('wasted.gif', 'wb').write(resp.content)
-                d = open("wasted.gif", "r+")
+                open(r'..\\data\\wasted.gif', 'wb').write(resp.content)
+                d = open(r"..\\data\\wasted.gif", "r+")
                 file_to_send = f'{os.getcwd()}/{d.name}'
 
 
-                await interaction.response.send_message(file=discord.File("wasted.gif"))
+                await interaction.response.send_message(file=discord.File(r"..\\data\\wasted.gif"))
             elif resp.status_code != 200:
                 await interaction.response.send_message("api is down",ephemeral=True)
 
@@ -780,11 +780,11 @@ class randomapi(commands.Cog):
             slice_object = slice(-10)
             resp = get(f"{search_url[slice_object]}")
             if resp.status_code == 200:
-                open('wasted.gif', 'wb').write(resp.content)
-                d = open("wasted.gif", "r+")
+                open(r'..\\data\\wasted.gif', 'wb').write(resp.content)
+                d = open(r"..\\data\\wasted.gif", "r+")
                 file_to_send = f'{os.getcwd()}/{d.name}'
 
-                await interaction.response.send_message(file=discord.File("wasted.gif"))
+                await interaction.response.send_message(file=discord.File(r"..\\data\\wasted.gif"))
 
             elif resp.status_code != 200:
                 await interaction.response.send_message("api is down", ephemeral=True)
@@ -803,12 +803,12 @@ class randomapi(commands.Cog):
             slice_object = slice(-14)
             resp = get(f"{search_url[slice_object]}png")
             if resp.status_code == 200:
-                open('wasted.gif', 'wb').write(resp.content)
-                d = open("wasted.gif", "r+")
+                open(r'..\\data\\wasted.gif', 'wb').write(resp.content)
+                d = open(r"..\\data\\wasted.gif", "r+")
                 file_to_send = f'{os.getcwd()}/{d.name}'
 
                 await ctx.message.add_reaction("✅")
-                await ctx.send(file=discord.File("wasted.gif"))
+                await ctx.send(file=discord.File(r"..\\data\\wasted.gif"))
                 await ctx.message.clear_reaction("✅")
 
             elif resp.status_code != 200:
@@ -819,12 +819,12 @@ class randomapi(commands.Cog):
             slice_object = slice(-14)
             resp = get(f"{search_url[slice_object]}png")
             if resp.status_code == 200:
-                open('wasted.gif', 'wb').write(resp.content)
-                d = open("wasted.gif", "r+")
+                open(r'..\\data\\wasted.gif', 'wb').write(resp.content)
+                d = open(r"..\\data\\wasted.gif", "r+")
                 file_to_send = f'{os.getcwd()}/{d.name}'
 
                 await ctx.message.add_reaction("✅")
-                await ctx.send(file=discord.File("wasted.gif"))
+                await ctx.send(file=discord.File(r"..\\data\\wasted.gif"))
                 await ctx.message.clear_reaction("✅")
 
             elif resp.status_code != 200:
@@ -842,12 +842,12 @@ class randomapi(commands.Cog):
             slice_object = slice(-10)
             resp = get(f"{search_url[slice_object]}")
             if resp.status_code == 200:
-                open('comrade.gif', 'wb').write(resp.content)
-                d = open("comrade.gif", "r+")
+                open(r'..\\data\\comrade.gif', 'wb').write(resp.content)
+                d = open(r"..\\data\\comrade.gif", "r+")
                 file_to_send = f'{os.getcwd()}/{d.name}'
 
 
-                await interaction.response.send_message(file=discord.File("comrade.gif"))
+                await interaction.response.send_message(file=discord.File(r"..\\data\\comrade.gif"))
 
 
             elif resp.status_code != 200:
@@ -857,12 +857,12 @@ class randomapi(commands.Cog):
             slice_object = slice(-10)
             resp = get(f"{search_url[slice_object]}")
             if resp.status_code == 200:
-                open('comrade.gif', 'wb').write(resp.content)
-                d = open("comrade.gif", "r+")
+                open(r'..\\data\\comrade.gif', 'wb').write(resp.content)
+                d = open(r"..\\data\\comrade.gif", "r+")
                 file_to_send = f'{os.getcwd()}/{d.name}'
 
 
-                await interaction.response.send_message(file=discord.File("comrade.gif"))
+                await interaction.response.send_message(file=discord.File(r"..\\data\\comrade.gif"))
 
 
 
@@ -883,12 +883,12 @@ class randomapi(commands.Cog):
             slice_object = slice(-10)
             resp = get(f"{search_url[slice_object]}")
             if resp.status_code == 200:
-                open('comrade.gif', 'wb').write(resp.content)
-                d = open("comrade.gif", "r+")
+                open(r'..\\data\\comrade.gif', 'wb').write(resp.content)
+                d = open(r"..\\data\\comrade.gif", "r+")
                 file_to_send = f'{os.getcwd()}/{d.name}'
 
                 await ctx.message.add_reaction("✅")
-                await ctx.send(file=discord.File("comrade.gif"))
+                await ctx.send(file=discord.File(r"..\\data\\comrade.gif"))
                 await ctx.message.clear_reaction("✅")
 
             elif resp.status_code != 200:
@@ -898,12 +898,12 @@ class randomapi(commands.Cog):
             slice_object = slice(-10)
             resp = get(f"{search_url[slice_object]}")
             if resp.status_code == 200:
-                open('comrade.gif', 'wb').write(resp.content)
-                d = open("comrade.gif", "r+")
+                open(r'..\\data\\comrade.gif', 'wb').write(resp.content)
+                d = open(r"..\\data\\comrade.gif", "r+")
                 file_to_send = f'{os.getcwd()}/{d.name}'
 
                 await ctx.message.add_reaction("✅")
-                await ctx.send(file=discord.File("comrade.gif"))
+                await ctx.send(file=discord.File(r"..\\data\\comrade.gif"))
                 await ctx.message.clear_reaction("✅")
 
 
@@ -1098,6 +1098,6 @@ class randomapi(commands.Cog):
 
 
 
-async def setup(bot: commands.Bot ) -> None:
+async def setup(bot: SussyBot) -> None:
     await bot.add_cog(
         randomapi(bot))
