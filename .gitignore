@@ -26,7 +26,6 @@ var/
 *.egg-info/
 .installed.cfg
 *.egg
-data/
 
 # PyInstaller
 #  Usually these files are written by a python script from a template
@@ -155,5 +154,7 @@ crashlytics.properties
 crashlytics-build.properties
 fabric.properties
 main.sqlite
+#ignore
+*.gif
 
 
