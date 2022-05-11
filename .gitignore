@@ -87,6 +87,7 @@ data/command.json
 # virtualenv
 venv/
 ENV/
+.idea/
 
 # Spyder project settings
 .spyderproject
@@ -156,5 +157,5 @@ fabric.properties
 main.sqlite
 #ignore
 *.gif
-
-
+*.DS_Store
+.idea
