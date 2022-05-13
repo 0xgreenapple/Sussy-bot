@@ -11,7 +11,7 @@ from discord import app_commands, role
 from discord.ui import Button, View, TextInput
 from discord import ui
 from discord.utils import get
-import sqlite3
+
 
 
 class normal(commands.Cog):
@@ -380,7 +380,6 @@ class normal(commands.Cog):
     async def morseslash_error(self, interaction: discord.Interaction, error: app_commands.AppCommandError):
         if isinstance(error, app_commands.CommandOnCooldown):
             await interaction.response.send_message(f"{error}", ephemeral=True)
-
         else:
             await interaction.response.send_message(
                 "something went wrong do $help or report for bugs by doingn $bugs <bugs>", ephemeral=True)

@@ -63,17 +63,18 @@ class messagess(commands.Cog):
                 """,
                 int(b), ctx.guild.id
             )
-            leaderboard[x] = name
-            total.append(x)
-        print("second")
+            leaderboard[name] = x
+
         em = discord.Embed(title=f'Top 10 active members in {ctx.guild.name}', colour=self.bot.violet_color)
+        sorted_words = sorted(leaderboard.items(), key=lambda item: int(item[1]), reverse=True)
         index = 1
-        for amt in total:
-            id_ = leaderboard[amt]
+        for key, val in sorted_words:
+            id_ = key
             member = self.bot.get_user(id_)
-            em.add_field(name=f'``{index}:`` {member}', value=f' **messages sent :** ``{amt}``', inline=False)
+            em.add_field(name=f'``{index}:`` {member}', value=f' **messages sent :** ``{val}``', inline=False)
             em.set_footer(text=f"{self.bot.user.name} : information requested by {ctx.author.display_name}",
                           icon_url=self.bot.user.avatar.url)
+
             if index == l:
                 break
             else:
@@ -109,7 +110,7 @@ class messagess(commands.Cog):
     # slash command
     @app_commands.command(name="messages_leaderboard", description="show leaderboard by messages sent by user")
     @app_commands.checks.cooldown(1, 5, key=lambda j: (j.guild_id, j.user.id))
-    async def messageslbslash(self, ctx):
+    async def messageslbslash(self, interaction:discord.Interaction):
         l = 10
         a = await self.bot.db.fetch(
             """
@@ -117,11 +118,11 @@ class messagess(commands.Cog):
             FROM chat.messagecount
              WHERE guild_id = $1
             """,
-            ctx.guild.id
+            interaction.guild.id
         )
         print("first")
         leaderboard = {}
-        total = []
+
         for i in a:
             b = str(i).replace("<", "").replace(">", "").replace("=", " ").replace("Record", "").replace("user_id", "")
             name = int(b)
@@ -131,28 +132,28 @@ class messagess(commands.Cog):
                 FROM chat.messagecount
                  WHERE user_id = $1 AND guild_id = $2
                 """,
-                int(b), ctx.guild.id
+                int(b), interaction.guild.id
             )
-            leaderboard[x] = name
-            total.append(x)
+            leaderboard[name] = x
 
         print("second")
-        em = discord.Embed(title=f'Top 10 active members in {ctx.guild.name}', colour=self.bot.violet_color)
 
+        em = discord.Embed(title=f'Top 10 active members in {interaction.user.guild.name}', colour=self.bot.violet_color)
+        sorted_words = sorted(leaderboard.items(), key=lambda item: int(item[1]), reverse=True)
         index = 1
-
-        for amt in total:
-            id_ = leaderboard[amt]
+        for key, val in sorted_words:
+            id_ = key
             member = self.bot.get_user(id_)
-            em.add_field(name=f'``{index}:`` {member}', value=f' **messages sent :** ``{amt}``', inline=False)
-            em.set_footer(text=f"{self.bot.user.name} : information requested by {ctx.author.display_name}",
+            em.add_field(name=f'``{index}:`` {member}', value=f' **messages sent :** ``{val}``', inline=False)
+            em.set_footer(text=f"{self.bot.user.name} : information requested by {interaction.user.display_name}",
                           icon_url=self.bot.user.avatar.url)
-
             if index == l:
                 break
             else:
                 index += 1
-        await ctx.send(embed=em)
+        await interaction.response.send_message(embed=em)
+
+
 
     """@messageslbslash.error
     async def messageslb_error(self, interaction: discord.Interaction, error: app_commands.AppCommandError):
@@ -160,6 +161,7 @@ class messagess(commands.Cog):
             await interaction.response.send_message(error, ephemeral=True)
         else:
             await interaction.response.send_message("something went wrong", ephemeral=True)"""
+
 
     @app_commands.command(name="messages", description="Display amount of messages sent by a user or yourself")
     @app_commands.checks.cooldown(1, 5, key=lambda j: (j.guild_id, j.user.id))

@@ -1,18 +1,17 @@
 import asyncio
-import datetime
-import logging
 from platform import python_version
 import aiohttp
 import discord
 from discord.ext import commands, tasks
-from discord.ext.commands import Bot as BotBase
 import os
 import random
 from glob import glob
 from itertools import cycle
 import json
-from collections import Counter, defaultdict
 from handler.database import create_database_pool
+import datetime
+import time
+from datetime import timedelta
 
 COGS = [path.split("\\")[-1][:-3] for path in glob("./cogs/*.py")]
 
@@ -65,6 +64,7 @@ class SussyBot(commands.Bot):
             intents=discord.Intents.all(),
             application_id=953274927027458148,
             heartbeat_timeout=1000.0,
+            help_command=None
         )
         # CUSTOM
         self.online_time = datetime.datetime.now(datetime.timezone.utc)
@@ -96,7 +96,7 @@ class SussyBot(commands.Bot):
         self.violet_color = self.violet_color = 0xba9aeb
         self.green_colour = self.green_colour = 0x00ff85
         self.yellow_colour = self.yellow_colour = 0xffe000
-
+            
         # database
         self.db = self.database = self.database_connection_pool = None
         self.connected_to_database = asyncio.Event()
@@ -108,7 +108,7 @@ class SussyBot(commands.Bot):
         self.bot_app_info = await self.application_info()
         self.owner_id = self.bot_app_info.owner.id
         await self.initialize_database()
-        COGS = ["messagess","randomapi"]
+        COGS = ["calc command","error handler","messagess","normal","randomapi","Tenor","unsplash"]
         print("loading cogs ....")
         print("h")
         for cog in COGS:
@@ -131,32 +131,7 @@ class SussyBot(commands.Bot):
     async def initialize_database(self):
         await self.connect_to_database()
         await self.db.execute("CREATE SCHEMA IF NOT EXISTS chat")
-        await self.db.execute("CREATE SCHEMA IF NOT EXISTS direct_messages")
-        await self.db.execute("CREATE SCHEMA IF NOT EXISTS meta")
         await self.db.execute("CREATE SCHEMA IF NOT EXISTS guilds")
-        await self.db.execute("CREATE SCHEMA IF NOT EXISTS users")
-        await self.db.execute(
-            """
-            CREATE TABLE IF NOT EXISTS chat.messages (
-                created_at				TIMESTAMPTZ, 
-                message_id				BIGINT PRIMARY KEY, 
-                author_id				BIGINT, 
-                author_name				TEXT, 
-                author_discriminator	TEXT, 
-                author_display_name		TEXT, 
-                direct_message			BOOL, 
-                channel_id				BIGINT, 
-                channel_name			TEXT, 
-                guild_id				BIGINT, 
-                guild_name				TEXT, 
-                message_content			TEXT, 
-                embeds					JSONB [], 
-                thread					BOOL, 
-                thread_id				BIGINT, 
-                thread_name				TEXT
-            )
-            """
-        )
         await self.db.execute(
             """
             CREATE TABLE IF NOT EXISTS chat.messagecount(
@@ -170,134 +145,22 @@ class SussyBot(commands.Bot):
         )
         await self.db.execute(
             """
-            CREATE TABLE IF NOT EXISTS chat.edits (
-                edited_at		TIMESTAMPTZ, 
-                message_id		BIGINT REFERENCES chat.messages(message_id) ON DELETE CASCADE, 
-                before_content	TEXT,
-                after_content	TEXT, 
-                before_embeds	JSONB [], 
-                after_embeds	JSONB [], 
-                PRIMARY KEY		(edited_at, message_id)
-            )
-            """
-        )
-        await self.db.execute(
-            """
-            CREATE TABLE IF NOT EXISTS direct_messages.prefixes (
-                channel_id	BIGINT PRIMARY KEY, 
-                prefixes	TEXT []
+            CREATE TABLE IF NOT EXISTS guilds.welcome_message (
+                guild_id		BIGINT PRIMARY KEY,
+                channel_id      BIGINT,
+                message		    Text
             )
             """
         )
         await self.db.execute(
             """
             CREATE TABLE IF NOT EXISTS guilds.prefixes (
-                guild_id	BIGINT PRIMARY KEY, 
-                prefixes	TEXT []
+                guild_id		BIGINT PRIMARY KEY,
+                prefixes		    TEXT
             )
             """
         )
-        await self.db.execute(
-            """
-            CREATE TABLE IF NOT EXISTS guilds.settings (
-                guild_id		BIGINT, 
-                name			TEXT, 
-                setting			BOOL, 
-                PRIMARY KEY		(guild_id, name)
-            )
-            """
-        )
-        await self.db.execute(
-            """
-            CREATE TABLE IF NOT EXISTS meta.commands_invoked (
-                command		TEXT PRIMARY KEY, 
-                invokes		BIGINT
-            )
-            """
-        )
-        await self.db.execute(
-            """
-            CREATE TABLE IF NOT EXISTS meta.message_context_menu_commands (
-                command			TEXT PRIMARY KEY, 
-                invocations		BIGINT
-            )
-            """
-        )
-        await self.db.execute(
-            """
-            CREATE TABLE IF NOT EXISTS meta.restart_channels (
-                channel_id				BIGINT PRIMARY KEY, 
-                player_text_channel_id	BIGINT, 
-                restart_message_id		BIGINT
-            )
-            """
-        )
-        await self.db.execute(
-            """
-            CREATE TABLE IF NOT EXISTS meta.slash_commands (
-                command			TEXT PRIMARY KEY, 
-                invocations		BIGINT
-            )
-            """
-        )
-        await self.db.execute(
-            """
-            CREATE TABLE IF NOT EXISTS meta.stats (
-                timestamp			TIMESTAMPTZ PRIMARY KEY DEFAULT NOW(), 
-                uptime				INTERVAL, 
-                restarts			INT, 
-                cogs_reloaded		INT, 
-                commands_invoked	BIGINT, 
-                reaction_responses	BIGINT, 
-                menu_reactions		BIGINT
-            )
-            """
-        )
-        await self.db.execute(
-            """
-            CREATE TABLE IF NOT EXISTS meta.user_context_menu_commands (
-                command			TEXT PRIMARY KEY, 
-                invocations		BIGINT
-            )
-            """
-        )
-        previous = await self.db.fetchrow(
-            """
-            SELECT * FROM meta.stats
-            ORDER BY timestamp DESC
-            LIMIT 1
-            """
-        )
-        if previous:
-            await self.db.execute(
-                """
-                INSERT INTO meta.stats (timestamp, uptime, restarts, cogs_reloaded, commands_invoked, reaction_responses, menu_reactions)
-                VALUES ($1, $2, $3, $4, $5, $6, $7)
-                ON CONFLICT DO NOTHING
-                """,
-                self.online_time, previous["uptime"], previous["restarts"],
-                previous["cogs_reloaded"], previous["commands_invoked"], previous["reaction_responses"],
-                previous["menu_reactions"]
-            )
-        else:
-            await self.db.execute(
-                """
-                INSERT INTO meta.stats (timestamp, uptime, restarts, cogs_reloaded, commands_invoked, reaction_responses, menu_reactions)
-                VALUES ($1, INTERVAL '0 seconds', 0, 0, 0, 0, 0)
-                """,
-                self.online_time
-            )
-        await self.db.execute(
-            """
-            CREATE TABLE IF NOT EXISTS users.stats (
-                user_id										BIGINT PRIMARY KEY, 
-                commands_invoked							INT, 
-                slash_command_invocations					BIGINT, 
-                message_context_menu_command_invocations	BIGINT, 
-                user_context_menu_command_invocations		BIGINT
-            )
-            """
-        )
+
 
     def print(self, message):
         print(f"[{datetime.datetime.now().isoformat()}] > {self.console_message_prefix} > {message}")
@@ -321,6 +184,9 @@ class SussyBot(commands.Bot):
         await self.change_presence(status=discord.Status.online,
                                    activity=discord.Activity(type=discord.ActivityType.playing, name=next(status)))
     async def on_ready(self):
+        if not hasattr(self, 'uptime'):
+            self.startTime = time.time()
+        print(self.startTime)
         if not self.ready:
             self.ready = True
             self.print("ready")
@@ -331,33 +197,6 @@ class SussyBot(commands.Bot):
 
     def reply(self, content, *args, **kwargs):
         return self.send(f"{self.author.display_name}:\n{content}", **kwargs)
-    async def on_message_edit(self, before, after):
-        if after.edited_at != before.edited_at:
-            if before.content != after.content:
-                await self.db.execute(
-                    """
-                    INSERT INTO chat.edits (edited_at, message_id, before_content, after_content)
-                    SELECT $1, $2, $3, $4
-                    WHERE EXISTS (SELECT * FROM chat.messages WHERE chat.messages.message_id = $2)
-                    ON CONFLICT (edited_at, message_id) DO
-                    UPDATE SET before_content = $3, after_content = $4
-                    """,
-                    after.edited_at.replace(tzinfo=datetime.timezone.utc), after.id,
-                    before.content.replace('\N{NULL}', ""), after.content.replace('\N{NULL}', "")
-                )
-            before_embeds = [embed.to_dict() for embed in before.embeds]
-            after_embeds = [embed.to_dict() for embed in after.embeds]
-            if before_embeds != after_embeds:
-                await self.db.execute(
-                    """
-                    INSERT INTO chat.edits (edited_at, message_id, before_embeds, after_embeds)
-                    SELECT $1, $2, $3, $4
-                    WHERE EXISTS (SELECT * FROM chat.messages WHERE chat.messages.message_id = $2)
-                    ON CONFLICT (edited_at, message_id) DO
-                    UPDATE SET before_embeds = CAST($3 AS jsonb[]), after_embeds = CAST($4 AS jsonb[])
-                    """,
-                    after.edited_at.replace(tzinfo=datetime.timezone.utc), after.id, before_embeds, after_embeds
-                )
 
 
     # load the prefix on guild join
@@ -377,6 +216,8 @@ class SussyBot(commands.Bot):
             json.dump(prefixes, f, indent=4)  # the indent is to make everything look a bit neater
         print(f"{guild.name} prefix loaded")
         """send to support server that bot is joined the guild"""
+
+
 
     # pop the guild prefix on leaving from the guild
     async def on_guild_remove(self, guild):
@@ -411,10 +252,13 @@ class SussyBot(commands.Bot):
         # Close database connection
         await self.database_connection_pool.close()
 
+
     """the random words that bot sent"""
 
     # this is the code that make the bot automaticly respose on ping
     async def on_message(self, message):
+
+
 
         a = ["keep your mouth close",
              " dont disturb me :)",
@@ -438,7 +282,7 @@ class SussyBot(commands.Bot):
              ]
         message_in = message.content
         # logging
-        print(f"{message.guild} {message.channel} : {message.author}: {message.author.display_name}: {message.content}")
+        """self.print(f"{message.guild} {message.channel} : {message.author}: {message.author.display_name}: {message.content}")"""
 
         if message.author.bot:
             return

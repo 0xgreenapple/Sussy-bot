@@ -1,9 +1,12 @@
 import contextlib
 import json
 import os
-import sys
 # database
 import asyncpg
+import dotenv
+
+
+
 
 password = os.environ['DBPASSWORD']
 host = os.environ['DBHOST']
@@ -13,24 +16,24 @@ host = os.environ['DBHOST']
 async def create_database_connection():
     print("conn happening")
     connection = await asyncpg.connect(
-        user="postgres",
+        user="hlzrnjfduekgap",
         password=password,
-        database="postgres",
+        database="dfcd7pseoj603e",
         host=host
     )
     await initialize_database_connection(connection)
     try:
         yield connection
     finally:
+        print("database closed")
         await connection.close()
-
 
 async def create_database_pool():
     print("happening")
     return await asyncpg.create_pool(
-        user="postgres",
+        user="hlzrnjfduekgap",
         password=password,
-        database="postgres",
+        database="dfcd7pseoj603e",
         host=host,
         init=initialize_database_connection
     )

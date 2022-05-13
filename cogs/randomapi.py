@@ -9,7 +9,6 @@ from discord import app_commands
 from discord.ui import Button , View
 from discord.ext.commands import cooldown , BucketType
 from discord.app_commands import Choice
-from typing import Optional
 from bot import SussyBot
 
 class randomapi(commands.Cog):
@@ -280,16 +279,6 @@ class randomapi(commands.Cog):
 
 
 #random api ml fun command ========================================================================
-
-
-
-
-
-
-
-
-
-
         """messageCount[author] = 1
         with open('messages.json', 'w') as f:  # write in the prefix.json "message.guild.id": "bl!"
             json.dump(messageCount, f, indent=4)"""

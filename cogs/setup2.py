@@ -4,12 +4,12 @@ import discord
 from discord.ext import commands
 import random
 import json
-
+from bot import SussyBot
 
 import logging
 
 class setup2(commands.Cog):
-    def __init__(self, bot: commands.Bot) -> None:
+    def __init__(self, bot: SussyBot) -> None:
         self.bot = bot
 
 
@@ -53,28 +53,41 @@ class setup2(commands.Cog):
     @setup.command()
     async def welcome(self, ctx, channel:discord.TextChannel, *, message:str):
         embed = discord.Embed(title="welcome message",description=message)
-        with open('welcome.json', 'r') as f:  # read the prefix.json file
-            msg = json.load(f)
-        msg[str(ctx.guild.id)] = {}
-        msg[str(ctx.guild.id)]["channel"]=int(channel.id)
-        msg[str(ctx.guild.id)]["message"]=str(message)
-        with open('welcome.json', 'w') as f:  # write in the prefix.json "message.guild.id": "bl!"
-            json.dump(msg, f, indent=4)
-        await ctx.send("rule done")
+        await self.bot.db.execute(
+            """
+            INSERT INTO guilds.welcome_message(guild_id,channel_id,message)
+            VALUES ($1,$2,$3)
+            ON CONFLICT (guild_id) DO
+            UPDATE SET message = $3, channel_id=$2
+            """,
+            ctx.guild.id,channel.id,message
+        )
+
 
         await ctx.send(embed=embed)
 
     @commands.Cog.listener()
     async def on_member_join(self,member):
-        with open("welcome.json", 'r') as f:
-            users = json.load(f)
-        channelid = users[str(member.guild.id)]["channel"]
-        message = users[str(member.guild.id)]["message"]
-        embed= discord.Embed(title=member.name,description=f"**{message}**")
-        channel = await self.bot.fetch_channel(channelid)
 
+        channel_id = await self.bot.db.fetchval(
+            """
+            SELECT channel_id FROM guilds.welcome_message
+            WHERE guild_id = $1
+            """,
+            member.guild.id
+        )
+        message = await self.bot.db.fetchval(
+            """
+            SELECT message FROM guilds.welcome_message
+            WHERE guild_id = $1
+            """,
+            member.guild.id
+        )
+
+        embed= discord.Embed(title=f"``{member.guild.member_count}`` {member.name}",description=f"**{str(message)}**",colour=self.bot.cyan_color)
+        channel = await self.bot.fetch_channel(int(channel_id))
         await channel.send(embed=embed)
 
-async def setup(bot: commands.Bot ) -> None:
+async def setup(bot: SussyBot ) -> None:
     await bot.add_cog(
         setup2(bot))

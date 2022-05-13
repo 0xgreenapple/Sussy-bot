@@ -1,10 +1,7 @@
 import logging
-
 from bot import SussyBot
-import os
 import asyncio
-from apscheduler.schedulers.asyncio import AsyncIOScheduler
-import aiohttp
+
 
 client = SussyBot()
 
@@ -18,9 +15,23 @@ async def pre(ctx):
         """,
         ctx.guild.id
     )
-    await ctx.send(prefixes)
+    if prefixes is None:
+        await client.db.execute(
+            """
+            INSERT INTO guilds.prefixes (guild_id, prefixes)
+            VALUES($1,$2)
+            ON CONFLICT DO NOTHING
+            """,
+            ctx.guild.id,"$"
+        )
+        await ctx.send("prefix set to $")
+        return
+    else:
+        await ctx.send(prefixes)
+
+
 @client.command()
-async def setpre(ctx,prefix:list):
+async def setpre(ctx,prefix):
     await client.db.execute(
         """
         UPDATE guilds.prefixes 

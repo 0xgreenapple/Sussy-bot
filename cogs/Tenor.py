@@ -7,9 +7,9 @@ from requests import get
 from discord.ext import commands
 from discord import app_commands
 from discord.ui import Button , View
-
+from bot import SussyBot
 class Tenor(commands.Cog):
-    def __init__(self, bot: commands.Bot) -> None:
+    def __init__(self, bot: SussyBot) -> None:
         self.bot = bot
 
     @commands.command(pass_context=True)
@@ -89,6 +89,6 @@ class Tenor(commands.Cog):
 
 
 
-async def setup(bot: commands.Bot ) -> None:
+async def setup(bot: SussyBot ) -> None:
     await bot.add_cog(
         Tenor(bot))

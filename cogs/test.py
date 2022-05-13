@@ -1,8 +1,12 @@
 import asyncio
 
 import discord
+import psutil
 from discord.ext import commands
 from bot import SussyBot
+import datetime
+import time
+from datetime import timedelta
 from discord.ext.commands import cooldown, BucketType
 from discord import app_commands
 import aiohttp
@@ -13,7 +17,6 @@ import asyncpg
 from discord import ui
 from discord.enums import TextStyle
 from discord.ui import modal, TextInput
-from datetime import datetime
 import json
 import os
 import bot
@@ -64,7 +67,7 @@ class test(commands.Cog):
             ctx.guild.id
         )
         print("first")
-        logging.warning(a)
+
         leaderboard = {}
         total = []
         for i in a:
@@ -78,14 +81,29 @@ class test(commands.Cog):
                 """,
                 int(b), ctx.guild.id
             )
-            leaderboard[x] = name
+            leaderboard[name] = x
             total.append(x)
             logging.warning(total)
             logging.warning(leaderboard)
-
-
-        print("second")
         em = discord.Embed(title=f'Top 10 active members in {ctx.guild.name}', colour=self.bot.violet_color)
+        sorted_words=sorted(leaderboard.items(),key=lambda item: int(item[1]),reverse = True)
+        index = 1
+        for key,val in sorted_words:
+            id_ = key
+            member = self.bot.get_user(id_)
+            em.add_field(name=f'``{index}:`` {member}', value=f' **messages sent :** ``{val}``', inline=False)
+            em.set_footer(text=f"{self.bot.user.name} : information requested by {ctx.author.display_name}",
+                          icon_url=self.bot.user.avatar.url)
+
+            if index == l:
+                break
+            else:
+                index += 1
+        await ctx.send(embed=em)
+
+        """print(sorted_words)
+        logging.warning(sorted_words)"""
+        """em = discord.Embed(title=f'Top 10 active members in {ctx.guild.name}', colour=self.bot.violet_color)
 
         index = 1
 
@@ -100,7 +118,7 @@ class test(commands.Cog):
                 break
             else:
                 index += 1
-        await ctx.send(embed=em)
+        await ctx.send(embed=em)"""
 
     @commands.command()
     async def pingv(self, ctx, l=30):
@@ -112,7 +130,35 @@ class test(commands.Cog):
             """,
             ctx.author.id,ctx.guild.id
         )
-        await ctx.send(a)
+        msg_ref = ctx.message.reference
+        async with ctx.typing():
+            # do expensive stuff here
+            await ctx.send('done!')
+
+    """ def get_bot_uptime(self, *, brief: bool = False) -> str:
+        return time.human_timedelta(self.bot.uptime, accuracy=None, brief=brief, suffix=False)"""
+    @commands.hybrid_command(name="stats", description="Get bot system information")
+    @cooldown(1, 3, BucketType.user)
+    async def stats(self, ctx):
+        timestamp1 = datetime.datetime.utcnow()
+        uptime = (timedelta(seconds=int(round(time.time() - self.bot.startTime))))
+
+        member = 0
+        for guilds in self.bot.guilds:
+            a = guilds.member_count
+            member += a
+        bedem = discord.Embed(title='``status``',colour=self.bot.white_colour,timestamp=timestamp1)
+        bedem.add_field(name="Ping",value=f"```{round(self.bot.latency*1000)}ms```",inline=True)
+        bedem.add_field(name="Servers",value=f"```{len(self.bot.guilds)}```",inline=True)
+        bedem.add_field(name="Users",value=f"```{member}```",inline=True)
+        bedem.add_field(name="Uptime",value=f"```{uptime}```",inline=True)
+        bedem.add_field(name="Memory",value=f"**total :** ``{round(psutil.virtual_memory().total/1000000000,2)} GB``\n"
+                                            f"**used :** ``{round(psutil.virtual_memory().used/1000000000,2)} GB`` \n"
+                                            f"**available :** ``{round(psutil.virtual_memory().available/1000000000,2)} GB``",inline=False)
+        bedem.set_author(name=self.bot.user.name,icon_url=self.bot.user.avatar.url)
+        bedem.set_footer(text="\u200b",icon_url=self.bot.user.avatar.url)
+        await ctx.send(embed=bedem)
+
 
 
 

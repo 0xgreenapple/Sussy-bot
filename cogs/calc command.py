@@ -1,5 +1,4 @@
 import asyncio
-
 import discord
 import datetime
 from discord.ext import commands, tasks
@@ -7,17 +6,16 @@ from discord import app_commands
 from discord.app_commands import Choice
 from discord.ui import Select , View
 
-
+from bot import SussyBot
 
 
 class calc_command(commands.Cog):
-    def __init__(self, bot: commands.Bot) -> None:
+    def __init__(self, bot: SussyBot) -> None:
         self.bot = bot
 
 
     @commands.command()
     async def calc(self,ctx,number1 , pre , number2):
-        emoji = self.client.get_emoji("<:buffering:739613552058564639>")
         try:
            if pre == "+":
               number1 = int(number1)
@@ -135,6 +133,6 @@ class calc_command(commands.Cog):
 
 
 
-async def setup(bot: commands.Bot ) -> None:
+async def setup(bot: SussyBot ) -> None:
     await bot.add_cog(
         calc_command(bot))
