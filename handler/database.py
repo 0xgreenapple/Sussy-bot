@@ -6,19 +6,18 @@ import asyncpg
 import dotenv
 
 
+dotenv.load_dotenv()
 
-
-password = os.environ['DBPASSWORD']
-host = os.environ['DBHOST']
+password = os.environ.get('DBPASSWORD')
+host = os.environ.get('DBHOST')
 
 
 @contextlib.asynccontextmanager
 async def create_database_connection():
-    print("conn happening")
     connection = await asyncpg.connect(
-        user="hlzrnjfduekgap",
+        user="postgres",
         password=password,
-        database="dfcd7pseoj603e",
+        database="postgres",
         host=host
     )
     await initialize_database_connection(connection)
@@ -29,18 +28,16 @@ async def create_database_connection():
         await connection.close()
 
 async def create_database_pool():
-    print("happening")
     return await asyncpg.create_pool(
-        user="hlzrnjfduekgap",
+        user="postgres",
         password=password,
-        database="dfcd7pseoj603e",
+        database="postgres",
         host=host,
         init=initialize_database_connection
     )
 
 
 async def initialize_database_connection(connection):
-    print("happening inini")
     await connection.set_type_codec(
         "jsonb",
         encoder=json.dumps, decoder=json.loads,

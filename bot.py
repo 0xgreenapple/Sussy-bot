@@ -1,27 +1,38 @@
+import os
+import time
+import json
 import asyncio
-from platform import python_version
+import datetime
 import aiohttp
 import discord
-from discord.ext import commands, tasks
-import os
+import dotenv
 import random
+
 from glob import glob
 from itertools import cycle
-import json
 from handler.database import create_database_pool
-import datetime
-import time
+from platform import python_version
+from discord.ext import commands, tasks
+from discord.app_commands import CommandTree
 from datetime import timedelta
+from pympler.tracker import SummaryTracker
 
-COGS = [path.split("\\")[-1][:-3] for path in glob("./cogs/*.py")]
+dotenv.load_dotenv()
 
-"""this is the mai n file that run the bot"""
+"""this is the main file that run the bot"""
+
+tracker = SummaryTracker()
 print(
-    " eeeee e   e eeeee eeeee e    e    eeeee  eeeee eeeeeee \n "
-    "8     8   8 8     8     8    8    8    8 8   8   88  \n "
-    "8eeee 8   8 8eeee 8eeee 8eeee8    8eee8e 8   8   88  \n"
-    '     8 8   8     8     8   88      8    8 8   8   88  \n'
-    " 8ee88 88ee8 8ee88 8ee88   88      88eee8 8eee8   88  \n")
+    " .d8888b.  888     888  .d8888b.   .d8888b. Y88b   d88P      888888b.    .d88888b. 88888888888\n"
+    "d88P  Y88b 888     888 d88P  Y88b d88P  Y88b Y88b d88P       888  88b   d88P   Y88b    888    \n"
+    "Y88b.      888     888 Y88b.      Y88b.       Y88o88P        888  .88P  888     888    888    \n"
+    "  Y888b.   888     888   Y888b.    Y888b.      Y888P         8888888K.  888     888    888    \n"
+    "     Y88b. 888     888      Y88b.     Y88b.     888          888   Y88b 888     888    888    \n"
+    "       888 888     888        888       888     888          888    888 888     888    888    \n"
+    "Y88b  d88P Y88b. .d88P Y88b  d88P Y88b  d88P    888          888  d88P  Y88b. .d88P    888    \n"
+    "  Y8888P     Y88888P     Y8888P     Y8888P      888          8888888P     Y88888P      888    \n"
+
+)
 
 
 def get_prefix(client, message):  ##first we define get_prefix
@@ -50,7 +61,7 @@ def get_prefix(client, message):  ##first we define get_prefix
 
 
 # class bot the main code
-class SussyBot(commands.Bot):
+class SussyBot(commands.AutoShardedBot):
     user: discord.ClientUser
     bot_app_info: discord.AppInfo
     """the code that run the bot and load prefix"""
@@ -58,24 +69,27 @@ class SussyBot(commands.Bot):
     def __init__(self):
         allowed_mentions = discord.AllowedMentions(roles=False, everyone=False, users=True)
         self.ready = False
+        self.statues = cycle(
+            ["do not disturb me :)", '$help', 'Green apple', 'amongus', 'SUS', 'bruh', 'ur mom', '0101000101',
+             'game of life', 'what do you know about about rolling down in the deep'])
         super().__init__(
             command_prefix=(get_prefix),
             case_insensitive=True,
             intents=discord.Intents.all(),
-            application_id=953274927027458148,
-            heartbeat_timeout=1000.0,
+            application_id=976086412313120798,
             help_command=None
         )
         # CUSTOM
+
         self.online_time = datetime.datetime.now(datetime.timezone.utc)
         self.version = "0.0.11"
         self.owner_id = 888058231094665266
         self.console_message_prefix = "Sussy bot"
         self.changelog = "https://discord.gg/wC37kY3qwH"
         self.dashboard = "https://sussybot.xyz"
-        self.fake_ip = "ur mom"
+        self.fake_ip = "ur mother"
         self.fake_location = "new-york"
-        self.simple_user_agent = "Sussybot (Discord Bot)"
+        self.simple_user_ageent = "Sussybot (Discord Bot)"
         self.user_agent = (
             "Sussybot (Discord Bot) "
             f"Python/{python_version()} "
@@ -85,18 +99,24 @@ class SussyBot(commands.Bot):
         # colours
         self.bot_color = self.bot_colour = 0xff0047
         self.embed_default_colour = self.embed_default_colour = 0x00ffad
-        self.pink_color = self.pink_color = 0xff0f8c
-        self.blue_color = self.blue_color = 0x356eff
-        self.red_color = self.red_color = 0xff0047
-        self.cyan_color = self.cyan_color = 0x00ffad
-        self.dark_theme_background_color = self.dark_theme_background_colour = 0x36393e
+        self.pink_color = self.pink_colour = 0xff0f8c
+        self.blue_color = self.blue_colour = 0x356eff
+        self.red_color = self.red_colour = 0xff0047
+        self.cyan_color = self.cyan_colour = 0x00ffad
+        self.dark_theme_background_colour = self.dark_theme_background_colour = 0x36393e
         self.white_color = self.white_colour = 0xffffff
-        self.black_color = self.white_color = 0x000000
+        self.black_color = self.white_colour = 0x000000
         self.youtube_color = self.youtube_colour = 0xcd201f
-        self.violet_color = self.violet_color = 0xba9aeb
-        self.green_colour = self.green_colour = 0x00ff85
-        self.yellow_colour = self.yellow_colour = 0xffe000
-            
+        self.violet_color = self.violet_colour = 0xba9aeb
+        self.green_color = self.green_colour = 0x00ff85
+        self.yellow_color = self.yellow_colour = 0xffe000
+
+        # global permissions
+        self.regular_permission = [""]
+        """self.bug_hunter_emoji = self.get_emoji()
+        self.bravery_emoji = self.get_emoji()
+        discord.Member.public_flags.hypesquad_bravery"""
+
         # database
         self.db = self.database = self.database_connection_pool = None
         self.connected_to_database = asyncio.Event()
@@ -104,17 +124,21 @@ class SussyBot(commands.Bot):
 
     # load cogs from other files
     async def setup_hook(self) -> None:
-        self.session = aiohttp.ClientSession(loop=self.loop)
+        self.aiohttp_session = aiohttp.ClientSession(loop=self.loop)
+        self.print("client session start")
         self.bot_app_info = await self.application_info()
         self.owner_id = self.bot_app_info.owner.id
+        self.print("setting up database")
         await self.initialize_database()
+        self.print("database setup done")
+        self.loop.create_task(self.startup_tasks(), name="Bot startup tasks")
+
         COGS = ["calc command","error handler","messagess","normal","randomapi","Tenor","unsplash"]
-        print("loading cogs ....")
-        print("h")
+        self.print("loading cogs..")
         for cog in COGS:
             await self.load_extension(f"cogs.{cog}")
-            print(f"{cog} loaded ")
-        print("setup complete")
+            self.print(f"{cog} loaded ")
+        self.print("setup hook complete")
 
     # connect to database execute on setup hook
     async def connect_to_database(self):
@@ -160,10 +184,17 @@ class SussyBot(commands.Bot):
             )
             """
         )
-
+        await self.db.execute(
+            """
+            CREATE TABLE IF NOT EXISTS guilds.blacklist (
+                guild_id        BIGINT PRIMARY KEY
+            )
+            """
+        )
 
     def print(self, message):
         print(f"[{datetime.datetime.now().isoformat()}] > {self.console_message_prefix} > {message}")
+
     # do ready tasks
     @property
     async def app_info(self):
@@ -175,29 +206,29 @@ class SussyBot(commands.Bot):
     def owner(self) -> discord.User:
         return self.bot_app_info.owner
 
-    # the code that change bot status in every hours.
-    @tasks.loop(seconds=20)
-    async def change_status(self):
-        status = cycle(
-            ["do not disturb me :)", '$help', 'Green apple', 'amongus', 'SUS', 'bruh', 'ur mom', '0101000101',
-             'game of life', 'what do you know about about rolling down in the deep'])
-        await self.change_presence(status=discord.Status.online,
-                                   activity=discord.Activity(type=discord.ActivityType.playing, name=next(status)))
+    # the code that change bot status in every hour.
     async def on_ready(self):
+        self.print(f"is shard is rate limited :{self.is_ws_ratelimited()}")
+
         if not hasattr(self, 'uptime'):
             self.startTime = time.time()
-        print(self.startTime)
         if not self.ready:
             self.ready = True
-            self.print("ready")
-            print("status loop complete")
-            print(f"bot is logged as {self.user}")
+            self.print(f"bot is logged as {self.user}")
         else:
-            self.print('bot reconnected.')
+            self.print(f'{self.user}bot reconnected.')
 
     def reply(self, content, *args, **kwargs):
         return self.send(f"{self.author.display_name}:\n{content}", **kwargs)
 
+    @tasks.loop(hours=1)
+    async def change_status(self):
+        await self.change_presence(status=discord.Status.online,
+                                   activity=discord.Activity(type=discord.ActivityType.playing,
+                                                             name=next(self.statues)))
+
+    async def on_shard_ready(self, shard_id):
+        self.print(f"{shard_id} ready the latency {self.latency}")
 
     # load the prefix on guild join
     async def on_guild_join(self, guild):  # when the bot joins the guild
@@ -217,8 +248,6 @@ class SussyBot(commands.Bot):
         print(f"{guild.name} prefix loaded")
         """send to support server that bot is joined the guild"""
 
-
-
     # pop the guild prefix on leaving from the guild
     async def on_guild_remove(self, guild):
         await self.db.execute(
@@ -235,30 +264,55 @@ class SussyBot(commands.Bot):
         with open('data/prefixes.json', 'w') as f:
             json.dump(prefixes, f, indent=4)
 
-    async def close(self) -> None:
-        await super().close()
-        await self.session.close()
+    async def startup_tasks(self):
+        await self.wait_until_ready()
+        await self.change_status.start()
 
     async def start(self) -> None:
         await super().start(token, reconnect=True)
 
+    async def close(self) -> None:
+        try:
+            self.print(f"closing bot session")
+            await self.aiohttp_session.close()
+        except Exception as e:
+            print(e)
+        try:
+            self.print(f"closing the bot")
+            await super().close()
+        except Exception as e:
+            print(e)
+
+    # bot monitor
     async def on_resumed(self):
-        self.print("resumed")
+        """print when client resumed"""
+        self.print(f"{self.user} [resumed]")
+
+    async def on_connect(self):
+        """print when client connected to discord"""
+        self.print(f"{self.user} is connected successfully")
 
     async def on_disconnect(self):
-        self.print("disconnected")
+        """print when client disconnected to discord"""
+        self.print(f"{self.user} is disconnected")
 
+    # bot events monitor shards
+    async def on_shard_resumed(self, shard_id: int):
+        """print when shard resumed"""
+        self.print(f" {self.user} shard :{shard_id} resumed with latency {self.latency}")
+
+    async def on_shard_disconnect(self, shard_id: int):
+        """print when shard disconnect"""
+        self.print(f"{shard_id} has been disconnected")
+
+    # shutdown task
     async def shutdown_tasks(self):
+        """shutdown the database connection"""
         # Close database connection
         await self.database_connection_pool.close()
 
-
-    """the random words that bot sent"""
-
     # this is the code that make the bot automaticly respose on ping
     async def on_message(self, message):
-
-
 
         a = ["keep your mouth close",
              " dont disturb me :)",
@@ -299,7 +353,6 @@ class SussyBot(commands.Bot):
                     'cool') != -1 or message_in.lower().find('good') != -1 or message_in.lower().find('nice') != -1:
                 await message.channel.send(f'amongus')
 
-
             elif message_in.lower().find('bad') != -1 or message_in.lower().find(
                     'horrible') != -1 or message_in.lower().find('suck') != -1 or message_in.lower().find(
                 'terrible') != -1 or message_in.lower().find('waste') != -1 or message_in.lower().find(
@@ -307,6 +360,7 @@ class SussyBot(commands.Bot):
                 await message.channel.send(f'ur mom', delete_after=11)
 
             elif message_in.lower().find('hi') != -1 or message_in.lower().find(
+
                     'helo') != -1 or message_in.lower().find('sup') != -1 or message_in.lower().find(
                 'hello') != -1 or message_in.lower().find('sup') != -1 or message_in.lower().find(
                 'yo') != -1 or message_in.lower().find('hola') != -1 or message_in.lower().find(
@@ -333,4 +387,7 @@ class SussyBot(commands.Bot):
         await self.process_commands(message)
 
 
-token = os.environ['TOKEN']
+token = os.environ.get('BETATOKEN')
+application_id = os.environ.get('BETA_APPLICATION_ID')
+tracker.print_diff()
+print("")
