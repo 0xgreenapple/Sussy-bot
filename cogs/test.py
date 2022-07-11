@@ -1,27 +1,17 @@
-import asyncio
-
-import PIL.TiffImagePlugin
 import discord
 import psutil
-from discord.ext import commands
-from bot import SussyBot
-import datetime
+
 import time
-from datetime import timedelta
-from discord.ext.commands import cooldown, BucketType
-from discord import app_commands
-import aiohttp
-import json
 import logging
 import typing
-import asyncpg
-import os
-import bot
-from typing import Literal
 
+from bot import SussyBot
+from datetime import datetime, timedelta
+from discord import app_commands
+from discord.ext import commands
+from discord.ext.commands import cooldown, BucketType
 
-
-
+from handler.view import refresh_ping,delete_view
 class test(commands.Cog):
     def __init__(self, bot: SussyBot):
         self.bot = bot
@@ -140,73 +130,78 @@ class test(commands.Cog):
         return time.human_timedelta(self.bot.uptime, accuracy=None, brief=brief, suffix=False)"""
 
     @commands.hybrid_command(name="stats", description="Get bot system information")
-    @cooldown(1, 3, BucketType.user)
-    async def stats(self, ctx:commands.Context):
-        shard = self.bot.get_shard(ctx.guild.shard_id)
-        ping = shard.latency * 1000
+    @cooldown(1, 10, BucketType.user)
+    async def stats(self, ctx: commands.Context):
+        a = self
+        print(self)
+        ping = self.bot.latency * 1000
 
-        if ping >=100 and ping <= 200:
+        if 100 <= ping <= 200:
             ping_status = "neutral"
-        elif ping <=100:
+        elif ping <= 100:
             ping_status = "low"
         else:
             ping_status = "high"
-        timestamp1 = datetime.datetime.utcnow()
+        timestamp1 = datetime.utcnow()
         uptime = (timedelta(seconds=int(round(time.time() - self.bot.startTime))))
 
         member = 0
         for guilds in self.bot.guilds:
-            if guilds.shard_id == shard.id:
-                a = guilds.member_count
-                member += a
-        bedem = discord.Embed(title='``status``', colour=self.bot.white_colour, timestamp=timestamp1)
-        bedem.add_field(name=f"Ping **({ping_status})**", value=f"```{round(self.bot.latency * 1000)}ms```", inline=True)
-        bedem.add_field(name="Servers", value=f"```{len([guild for guild in self.bot.guilds if guild.shard_id == shard.id])}```", inline=True)
+            a = guilds.member_count
+            member += a
+        total_memory = round(psutil.virtual_memory().total)
+        if total_memory / 1000000 < 1000:
+            total_memory = f"{round(psutil.virtual_memory().total / 1000000)} MB"
+        else:
+            total_memory = f"{round(psutil.virtual_memory().total / 1000000000, 2)} GB"
+
+        used_memory = round(psutil.virtual_memory().used)
+        if used_memory / 1000000 < 1000:
+            used_memory = f"{round(psutil.virtual_memory().used / 1000000)} MB"
+        else:
+            used_memory = f"{round(psutil.virtual_memory().used / 1000000000, 2)} GB"
+
+        bedem = discord.Embed(title='``status``', colour=self.bot.bot_color, timestamp=timestamp1)
+        bedem.add_field(name=f"Ping **({ping_status})**", value=f"```{round(self.bot.latency * 1000)}ms```",
+                        inline=True)
+        bedem.add_field(name="Servers",
+                        value=f"```{len(self.bot.guilds)}```",
+                        inline=True)
         bedem.add_field(name="Users", value=f"```{member}```", inline=True)
         bedem.add_field(name="Uptime", value=f"```{uptime}```", inline=True)
         bedem.add_field(name="System",
-                        value=f"**memory Usage:** ``{round(psutil.virtual_memory().used / 1000000000, 2)} GB/{round(psutil.virtual_memory().total / 1000000000, 2)} GB`` \n "
+                        value=f"**memory Usage:** ``{used_memory} /{total_memory}`` \n "
                               f"**cpu :** ``{psutil.cpu_percent()}``%"
                         , inline=False)
         bedem.add_field(name="command ran today", value=f"```18238183```")
         bedem.set_author(name=ctx.author.name, icon_url=ctx.author.avatar.url)
         bedem.set_footer(text="\u200b", icon_url=self.bot.user.avatar.url)
-        await ctx.send(embed=bedem)
+        view = refresh_ping(ctx,self.bot)
+        view.message = await ctx.send(embed=bedem,view=view)
 
     @app_commands.command(name="hello")
     async def hello1(self, interaction=discord.Interaction):
         await interaction.response.send_message("hello")
 
-
-    @commands.command(name="test1")
-    async def avatar(self,ctx):
-        formats = ["png","webp",]
+    @commands.command(name="avatar")
+    async def avatar(self, ctx: commands.Context):
+        formats = ["png", "webp", ]
         small_size = ctx.author.avatar.with_size(256).with_static_format("png").url
         medium_size = ctx.author.avatar.with_size(512).with_static_format("png").url
-        large_size=ctx.author.avatar.with_size(1024).with_static_format("png").url
+        large_size = ctx.author.avatar.with_size(1024).with_static_format("png").url
         verylarge_size = ctx.author.avatar.with_size(2048).with_static_format("png").url
-
-        embed = discord.Embed(title=f"``avatar of {ctx.author.display_name}``",description=f"**Sizes:**:  **[SMALL]({small_size})** | **[MEDIUM]({medium_size})** | **[LARGE]({large_size})** | **[VERY LARGE]({verylarge_size})**|",timestamp=datetime.datetime.utcnow(),colour=self.bot.yellow_colour)
+        embed = discord.Embed(title=f"``avatar of {ctx.author.display_name}``",
+                              description=f"**Sizes:**:  **[SMALL]({small_size})** | **[MEDIUM]({medium_size})** | **[LARGE]({large_size})** | **[VERY LARGE]({verylarge_size})**|",
+                              timestamp=datetime.utcnow(), colour=self.bot.embed_colour)
         embed.set_image(url=ctx.author.avatar.url)
         embed.set_footer(text="size default (512x512)")
-        embed.set_author(name=ctx.author.display_name,icon_url=ctx.author.avatar.url)
+        embed.set_author(name=ctx.author.display_name, icon_url=ctx.author.avatar.url)
         await ctx.send(embed=embed)
 
-    @commands.command(name="timeout")
-    async def mute(self,ctx,member:discord.Member,time:int,*,reason:str):
-        imeout = (discord.utils.utcnow() + datetime.timedelta(minutes=time))
-        await member.timeout(imeout,reason=reason)
-        await ctx.send(f"{member} is timedout out until {time} minteus ")
 
 
     @commands.command()
-    async def unmute(self, ctx, member: discord.Member,*, reason: str):
-        await member.timeout(None,reason=reason)
-        await ctx.send("member has been timed out")
-        channel = await member.create_dm()
-        await channel.send("you have been timed out")
-    @commands.command()
-    async def userinfo(self,ctx,memder:typing.Union[discord.Member,discord.User]=None):
+    async def userinfo(self, ctx, memder: typing.Union[discord.Member, discord.User] = None):
 
         if memder is None:
 
@@ -214,8 +209,8 @@ class test(commands.Cog):
             a = ctx.author.roles
             a.sort(reverse=True)
             logging.warning(a)
-            first_line1= " "
-            second_line1= " "
+            first_line1 = " "
+            second_line1 = " "
             third_line1 = " "
             first_line = []
             second_line = []
@@ -242,14 +237,14 @@ class test(commands.Cog):
             third_line = third_line1.join(third_line)
 
             emoji = self.bot.get_emoji(965978649872441364)
-            embed = discord.Embed(colour=self.bot.yellow_colour,timestamp=discord.utils.utcnow())
+            embed = discord.Embed(colour=self.bot.embed_colour, timestamp=discord.utils.utcnow())
             embed.add_field(name="__**General information**__",
                             value=f"{emoji} **Tag :** {ctx.author}\n"
                                   f"{emoji} **userid :** ``{ctx.author.id}`` \n"
                                   f"{emoji} **creation date :** <t:{round(int(time.mktime(ctx.author.created_at.timetuple())))}:D>\n"
                                   f"{emoji} **creation age :** <t:{round((int(time.mktime(ctx.author.created_at.timetuple()))))}:R>\n"
                                   f"{emoji} **discord badges :** {badges}\n"
-                                  f"{emoji} **bot ? :** {ctx.author.bot}",inline=False)
+                                  f"{emoji} **bot ? :** {ctx.author.bot}", inline=False)
             embed.add_field(name="__**Server information**__",
                             value=f"{emoji} **nickname :**{ctx.author.nick}\n"
                                   f"{emoji} **top role :** ``{ctx.author.top_role.name}``\n"
@@ -257,7 +252,7 @@ class test(commands.Cog):
                                   f"{emoji} **server join date :** <t:{round(int(time.mktime(ctx.author.joined_at.timetuple())))}:D>\n"
                                   f"{emoji} **server join age :** <t:{round(int(time.mktime(ctx.author.joined_at.timetuple())))}:R>\n"
                                   f"{emoji} **role colour :** {ctx.author.top_role.colour}\n"
-                                 ,inline=False)
+                            , inline=False)
             activity = ""
             if ctx.author.activity is None:
                 activity = "none"
@@ -266,12 +261,12 @@ class test(commands.Cog):
             embed.add_field(name="__**user status**__",
                             value=f"{emoji} **activity :** {activity}\n"
                                   f"{emoji} **status :** ``{ctx.author.status}``\n"
-                                  f"{emoji} **timeout? :**``{ctx.author.is_timed_out()}``",inline=False)
+                                  f"{emoji} **timeout? :**``{ctx.author.is_timed_out()}``", inline=False)
             embed.add_field(name=f"__**role[{len(ctx.author.roles)}] top 10**__",
                             value=f"```{first_line}\n{second_line}\n{third_line}```")
             embed.set_thumbnail(url=ctx.author.avatar.url)
-            embed.set_author(name=ctx.author,icon_url=ctx.author.avatar.url)
-            embed.set_footer(text="\u200b",icon_url=ctx.author.avatar.url)
+            embed.set_author(name=ctx.author, icon_url=ctx.author.avatar.url)
+            embed.set_footer(text="\u200b", icon_url=ctx.author.avatar.url)
             await ctx.send(embed=embed)
             return
         elif memder is not None:
@@ -291,9 +286,10 @@ class test(commands.Cog):
                 b = " "
                 for i in a:
                     if i.name != "@everyone":
-                        while len(first_line) != 4:
-                            first_line.append(i.name)
-                            break
+                        if len(i.name) <= 6:
+                            while len(first_line) != 4:
+                                first_line.append(i.name)
+                                break
                         if len(first_line) == 4:
                             if len(i.name) <= 6:
                                 while len(second_line) != 4:
@@ -310,7 +306,7 @@ class test(commands.Cog):
                 third_line = third_line1.join(third_line)
 
                 emoji = self.bot.get_emoji(965978649872441364)
-                embed = discord.Embed(colour=self.bot.yellow_colour, timestamp=discord.utils.utcnow())
+                embed = discord.Embed(colour=self.bot.embed_colour, timestamp=discord.utils.utcnow())
                 embed.add_field(name="__**General information**__",
                                 value=f"{emoji} **Tag :** {memder}\n"
                                       f"{emoji} **userid :** ``{memder.id}`` \n"
@@ -349,10 +345,10 @@ class test(commands.Cog):
                 if memder.id in userbans:
                     ban = True
                 else:
-                    ban=False
+                    ban = False
                 activity = ""
                 emoji = self.bot.get_emoji(965978649872441364)
-                embed = discord.Embed(colour=self.bot.yellow_colour, timestamp=discord.utils.utcnow())
+                embed = discord.Embed(colour=self.bot.embed_colour, timestamp=discord.utils.utcnow())
                 embed.add_field(name="__**General information**__",
                                 value=f"{emoji} **Tag :** {memder}\n"
                                       f"{emoji} **userid :** ``{memder.id}`` \n"
@@ -367,8 +363,9 @@ class test(commands.Cog):
                 embed.set_footer(text="\u200b", icon_url=self.bot.user.avatar.url)
                 await ctx.send(embed=embed)
                 return
+
     @commands.command()
-    async def testcommand(self,ctx:commands.Context,member : discord.Member):
+    async def testcommand(self, ctx: commands.Context, member: discord.Member):
         a = member.guild_permissions
         logging.warning(a)
         b = []
@@ -381,8 +378,9 @@ class test(commands.Cog):
             await ctx.send(g)
             return
 
-        else :
-            listt = ['kick_members', 'ban_members','manage_channels','moderate_members','manage_messages','manage_permissions','manage_nicknames','manage_roles','manage_webhooks','manage_threads']
+        else:
+            listt = ['kick_members', 'ban_members', 'manage_channels', 'moderate_members', 'manage_messages',
+                     'manage_permissions', 'manage_nicknames', 'manage_roles', 'manage_webhooks', 'manage_threads']
             for i in listt:
                 if not i in b:
                     g = 'mod'
@@ -395,15 +393,7 @@ class test(commands.Cog):
 
 
 
-
-
-
-
-        logging.warning(b)
-
-
-
-    async def shop(self,member:typing.Union[discord.Member,discord.User]):
+    async def shop(self, member: typing.Union[discord.Member, discord.User]):
         emoji = []
 
         if member.public_flags.hypesquad_bravery:
@@ -422,7 +412,7 @@ class test(commands.Cog):
             early_supporter = self.bot.get_emoji(979326434101317642)
             emoji.append(str(early_supporter))
         if member.public_flags.bug_hunter:
-            bug_hunter= self.bot.get_emoji(979330886023643146)
+            bug_hunter = self.bot.get_emoji(979330886023643146)
             emoji.append(str(bug_hunter))
         if member.public_flags.staff:
             staff = self.bot.get_emoji(979330886954803200)
@@ -435,7 +425,26 @@ class test(commands.Cog):
             finale = "none"
         return finale
 
+    a = discord.User
 
+    @commands.command(name="member")
+
+    async def test123(self,ctx:commands.Context):
+        a = ""
+        b = 0
+        for i in range(1, 100):
+            a = await self.bot.db.fetchval(
+                """
+                    SELECT datetime 
+                    FROM test.datetime 
+                    WHERE user_id = $1
+                """,
+                ctx.author.id
+            )
+            b += 1
+        print(type(a))
+        print(a)
+        print(b)
 
 
 async def setup(bot: SussyBot) -> None:

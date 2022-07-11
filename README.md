@@ -24,7 +24,7 @@ APPLICATION_ID= your bot application id
 ```
 make sure to change the username in database.py file
 
-*note: this bot is still in development there is so may bugs in it i suggest using other bot templates*
+*note: this bot is still in development there is so may bugs in it, I suggest using other bot templates*
 
 
 ## created by

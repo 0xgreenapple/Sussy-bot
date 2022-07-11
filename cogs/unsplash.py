@@ -24,7 +24,7 @@ class unsplash(commands.Cog):
             embed4 = discord.Embed(title="", description="")
             search_url = None
             final_image = None
-            if message != None:
+            if message is not None:
                 search_url = f'https://api.unsplash.com/search/photos?client_id={unsplashID}&query={message}&per_page=25'
             else:
                 search_url = f'https://api.unsplash.com/photos/random?client_id={unsplashID}&count=2'

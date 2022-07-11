@@ -522,7 +522,7 @@ class normal(commands.Cog):
         # In order for a persistent view to be listened to, it needs to be sent to an actual message.
         # Call this method once just to store it somewhere.
         # In a more complicated program you might fetch the message_id from a database for use later.
-        # However this is outside of the scope of this simple example.
+        # However, this is outside the scope of this simple example.
         await ctx.send("What's your favourite colour?")
 
     """@commands.command()
