@@ -6,32 +6,33 @@ import discord
 from discord.ext import commands
 from discord.ext.commands import Paginator as CommandPaginator
 from discord.ext import menus
-
-
+from bot import SussyBot
 
 if TYPE_CHECKING:
     from handler.Context import Context
 
 
+
 class RoboPages(discord.ui.View):
     def __init__(
-        self,
-        source: menus.PageSource,
-        *,
-        ctx: Context,
-        check_embeds: bool = True,
-        compact: bool = False,
+            self,
+            source: menus.PageSource,
+            *,
+            ctx: discord.Interaction,
+            check_embeds: bool = True,
+            compact: bool = False,
     ):
         super().__init__()
         self.source: menus.PageSource = source
         self.check_embeds: bool = check_embeds
-        self.ctx: Context = ctx
+        self.ctx: discord.Interaction = ctx
         self.message: Optional[discord.Message] = None
         self.current_page: int = 0
         self.compact: bool = compact
         self.input_lock = asyncio.Lock()
         self.clear_items()
         self.fill_items()
+        self.bot = SussyBot
 
     def fill_items(self) -> None:
         if self.source.is_paginating():
@@ -43,7 +44,6 @@ class RoboPages(discord.ui.View):
             self.add_item(self.go_to_next_page)
             if use_last_and_first:
                 self.add_item(self.go_to_last_page)
-
 
     async def _get_kwargs_from_page(self, page: int) -> Dict[str, Any]:
 
@@ -91,7 +91,6 @@ class RoboPages(discord.ui.View):
             if page_number == 0:
                 self.go_to_previous_page.disabled = True
 
-
     async def show_checked_page(self, interaction: discord.Interaction, page_number: int) -> None:
         max_pages = self.source.get_max_pages()
         try:
@@ -105,9 +104,10 @@ class RoboPages(discord.ui.View):
             pass
 
     async def interaction_check(self, interaction: discord.Interaction) -> bool:
-        if interaction.user and interaction.user.id in (self.ctx.bot.owner_id, self.ctx.author.id):
+        if interaction.user and interaction.user.id in (self.bot.owner, self.ctx.user.id):
             return True
-        await interaction.response.send_message('This pagination menu cannot be controlled by you, sorry!', ephemeral=True)
+        await interaction.response.send_message('This pagination menu cannot be controlled by you, sorry!',
+                                                ephemeral=True)
         return False
 
     async def on_timeout(self) -> None:
@@ -119,17 +119,13 @@ class RoboPages(discord.ui.View):
                 except discord.NotFound:
                     pass
 
-    async def on_error(self, interaction: discord.Interaction, error: Exception, item: discord.ui.Item) -> None:
-        if interaction.response.is_done():
-            await interaction.followup.send('An unknown error occurred, sorry', ephemeral=True)
-        else:
-            await interaction.response.send_message('An unknown error occurred, sorry', ephemeral=True)
+    # async def on_error(self, interaction: discord.Interaction, error: Exception, item: discord.ui.Item) -> None:
+    #     if interaction.response.is_done():
+    #         await interaction.followup.send('An unknown error occurred, sorry', ephemeral=True)
+    #     else:
+    #         await interaction.response.send_message('An unknown error occurred, sorry', ephemeral=True)
 
     async def start(self, *, content: Optional[str] = None) -> None:
-        if self.check_embeds and not self.ctx.channel.permissions_for(self.ctx.me).embed_links:  # type: ignore
-            await self.ctx.send('Bot does not have embed links permission in this channel')
-            return
-
         await self.source._prepare_once()
         page = await self.source.get_page(0)
         kwargs = await self._get_kwargs_from_page(page)
@@ -137,7 +133,8 @@ class RoboPages(discord.ui.View):
             kwargs.setdefault('content', content)
 
         self._update_labels(0)
-        self.message = await self.ctx.send(**kwargs, view=self)
+        print('start')
+        self.message = await self.ctx.followup.send(**kwargs, view=self)
 
     @discord.ui.button(label='≪', style=discord.ButtonStyle.blurple)
     async def go_to_first_page(self, interaction: discord.Interaction, button: discord.ui.Button):
@@ -199,25 +196,43 @@ class TextPageSource(menus.ListPageSource):
 
 
 class SimplePageSource(menus.ListPageSource):
+    def __init__(self, entries, title: str = None, *, per_page):
+        super().__init__(entries, per_page=per_page)
+        self.title = title
+
     async def format_page(self, menu, entries):
         menu.embed.clear_fields()
         pages = []
-        for index, entry in enumerate(entries, start=menu.current_page * self.per_page):
-            pages.append({index + 1 : entry})
 
         maximum = self.get_max_pages()
         if maximum > 1:
             footer = f'Page {menu.current_page + 1}/{maximum}'
             menu.embed.set_footer(text=footer)
 
-
-
-        menu.embed.title='the number of warnings of the user'
-        menu.embed.description = f'total :``{len(self.entries)}``'
         for i in pages:
             print(i)
-            for key,value in i.items():
-                menu.embed.add_field(name=f'#{key}',value=f'{value}',inline=False)
+            for key,value in i:
+                menu.embed.add_field(name=f'#{key}', value=f'{value}', inline=False)
+
+        return menu.embed
+
+
+class warnPageSource(menus.ListPageSource):
+
+    async def format_page(self, menu, entries):
+        menu.embed.clear_fields()
+        pages = entries
+
+        maximum = self.get_max_pages()
+        if maximum > 1:
+            footer = f'Page {menu.current_page + 1}/{maximum}'
+            menu.embed.set_footer(text=footer)
+
+        for i in pages:
+            print(i)
+            menu.embed.add_field(
+                name=f'<:icons8chevronright100:975326725158346774> ID:``{i.get("id")}`` time:<t:{i.get("time")}:R>',
+                value=f'<:icons8document100:975326725229641781> **reason:** {i.get("reason")}', inline=False)
 
         return menu.embed
 
@@ -227,6 +242,7 @@ class SimplePages(RoboPages):
     Basically an embed with some normal formatting.
     """
 
-    def __init__(self, entries, *, ctx: Context, per_page: int = 12):
-        super().__init__(SimplePageSource(entries, per_page=per_page), ctx=ctx)
-        self.embed = discord.Embed(colour=discord.Colour.blurple())
+    def __init__(self, entries, *, ctx: discord.Interaction, per_page: int = 12, title: str = None):
+        super().__init__(warnPageSource(entries, per_page=per_page), ctx=ctx)
+        print(f'simple pages {entries}')
+        self.embed = discord.Embed(title=title, colour=0xdfb01d)

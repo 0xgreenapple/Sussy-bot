@@ -35,7 +35,6 @@ class error_buttons(discord.ui.View):
         else:
             await interaction.response.send_message('this is not for you lol', ephemeral=True)
 
-
     @discord.ui.button(label='help', style=discord.ButtonStyle.green)
     async def help(self, interaction: discord.Interaction, button):
         if interaction.user.id == self.ctx.author.id or interaction.user.id == self.ctx.guild.owner.id:
@@ -44,7 +43,6 @@ class error_buttons(discord.ui.View):
         else:
             await interaction.response.send_message('this is not for you lol', ephemeral=True)
 
-
     async def on_timeout(self) -> None:
         for item in self.children:
             item.disabled = True
@@ -52,6 +50,7 @@ class error_buttons(discord.ui.View):
                 await self.message.edit(view=self)
             except discord.NotFound:
                 pass
+
 
 class delete_view(discord.ui.View):
     def __init__(
@@ -79,6 +78,7 @@ class delete_view(discord.ui.View):
             except discord.NotFound:
                 pass
 
+
 class userinfo(discord.ui.View):
     def __init__(
             self,
@@ -88,46 +88,47 @@ class userinfo(discord.ui.View):
         super().__init__(timeout=180)
         self.ctx: Context = ctx
         self.message: Optional[discord.Message] = None
+
     @discord.ui.button(label='permissions', style=discord.ButtonStyle.primary)
-    async def permission(self, interaction: discord.Interaction, button:discord.ui.Button):
+    async def permission(self, interaction: discord.Interaction, button: discord.ui.Button):
         if interaction.user.id == self.ctx.author.id or interaction.user.id == self.ctx.guild.owner.id:
             permission = []
             log.warning('hello')
-            for key,value in self.ctx.author.guild_permissions:
+            for key, value in self.ctx.author.guild_permissions:
                 if value:
-                    permission.append(key.replace('_',' '))
+                    permission.append(key.replace('_', ' '))
             permission = ', '.join(permission)
-            embed = discord.Embed(title='guild permissions',description=f'```yml \n{permission}```')
+            embed = discord.Embed(title='guild permissions', description=f'```yml \n{permission}```')
             self.permission1.disabled = False
             button.disabled = True
-            await interaction.response.edit_message(embed=embed,view=self)
+            await interaction.response.edit_message(embed=embed, view=self)
             return
         else:
             await interaction.response.send_message('this is not for you lol', ephemeral=True)
 
-    @discord.ui.button(label='back', style=discord.ButtonStyle.primary,disabled=True)
+    @discord.ui.button(label='back', style=discord.ButtonStyle.primary, disabled=True)
     async def permission1(self, interaction: discord.Interaction, button: discord.ui.Button):
         embed = self.message.embeds[0]
         button.disabled = True
         self.permission.disabled = False
-        await interaction.response.edit_message(embed=embed,view=self)
+        await interaction.response.edit_message(embed=embed, view=self)
 
 
 class refresh_ping(discord.ui.View):
     def __init__(
             self,
-            ctx: Context,
-            bot:SussyBot
+            ctx: discord.Interaction,
+            bot: SussyBot
 
     ):
-        super().__init__(timeout=180)
-        self.ctx: Context = ctx
-        self.bot: SussyBot  = bot
+        super().__init__(timeout=10)
+        self.ctx: discord.Interaction = ctx
+        self.bot: SussyBot = bot
         self.message: Optional[discord.Message] = None
 
     @discord.ui.button(label='refresh', style=discord.ButtonStyle.green)
     async def refresh_Ping(self, interaction: discord.Interaction, button):
-        if interaction.user.id == self.ctx.author.id or interaction.user.id == self.ctx.guild.owner.id:
+        if interaction.user.id == self.ctx.user.id or interaction.user.id == self.ctx.guild.owner.id:
 
             ping = self.bot.latency * 1000
 
@@ -169,18 +170,17 @@ class refresh_ping(discord.ui.View):
                                   f"**cpu :** ``{psutil.cpu_percent()}``%"
                             , inline=False)
             bedem.add_field(name="command ran today", value=f"```18238183```")
-            bedem.set_author(name=self.ctx.author.name, icon_url=self.ctx.author.avatar.url)
+            bedem.set_author(name=self.ctx.user.name, icon_url=self.ctx.user.avatar.url)
             bedem.set_footer(text="\u200b", icon_url=self.bot.user.avatar.url)
-            await interaction.response.edit_message(embed=bedem,view=self)
+            await interaction.response.edit_message(embed=bedem, view=self)
             return
         else:
             await interaction.response.send_message('this is not for you lol', ephemeral=True)
 
     @discord.ui.button(label='delete', style=discord.ButtonStyle.danger)
     async def delete_button(self, interaction: discord.Interaction, button):
-        if interaction.user.id == self.ctx.author.id or interaction.user.id == self.ctx.guild.owner.id:
+        if interaction.user.id == self.ctx.user.id or interaction.user.id == self.ctx.guild.owner.id:
             await interaction.message.delete()
-            await self.ctx.message.delete()
             return
         else:
             await interaction.response.send_message('this is not for you lol', ephemeral=True)
@@ -192,3 +192,58 @@ class refresh_ping(discord.ui.View):
                 await self.message.edit(view=self)
             except discord.NotFound:
                 pass
+
+
+class interaction_error_button(discord.ui.View):
+    def __init__(
+            self,
+            ctx: discord.Interaction,
+
+    ):
+        super().__init__(timeout=180)
+        self.message: Optional[discord.Message] = None
+        self.ctx: discord.Interaction = ctx
+
+    @discord.ui.button(label='help', style=discord.ButtonStyle.green)
+    async def help(self, interaction: discord.Interaction, button):
+        if interaction.user.id == self.ctx.user.id or interaction.user.id == self.ctx.guild.owner.id:
+            await interaction.response.send_message("no help?")
+            return
+        else:
+            await interaction.response.send_message('this is not for you lol', ephemeral=True)
+
+    async def on_timeout(self) -> None:
+        for item in self.children:
+            item.disabled = True
+            try:
+                await self.message.edit(view=self)
+            except discord.NotFound:
+                pass
+
+class interaction_delete_view(discord.ui.View):
+    def __init__(
+            self,
+            ctx: discord.Interaction,
+
+    ):
+        super().__init__(timeout=180)
+        self.ctx: discord.Interaction = ctx
+        self.message: Optional[discord.Message] = None
+
+    @discord.ui.button(label='delete', style=discord.ButtonStyle.danger)
+    async def delete_button(self, interaction: discord.Interaction, button):
+        if interaction.user.id == self.ctx.user.id or interaction.user.id == self.ctx.guild.owner.id:
+            await interaction.message.delete()
+            return
+        else:
+            await interaction.response.send_message('this is not for you lol', ephemeral=True)
+
+    async def on_timeout(self) -> None:
+        for item in self.children:
+            item.disabled = True
+            try:
+                if self.message:
+                    await self.message.edit(view=self)
+            except discord.NotFound:
+                pass
+

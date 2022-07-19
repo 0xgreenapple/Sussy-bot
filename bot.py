@@ -29,12 +29,14 @@ import contextlib
 
 from glob import glob
 from itertools import cycle
+
+import bot
 from handler.Context import Context
 from handler.database import create_database_pool
 from platform import python_version
 from discord.ext import commands, tasks
 from datetime import timedelta
-from discord import http , gateway,client
+from discord import http, gateway, client
 from discord.client import Client
 from pympler.tracker import SummaryTracker
 
@@ -55,12 +57,13 @@ print(
 
 
 # class bot the main code
-class SussyBot(commands.Bot,):
+class SussyBot(commands.Bot):
     """Sussy-bot v0.1.9 Interface
     """
 
     user: discord.ClientUser
     bot_app_info: discord.AppInfo
+    owner: 888058231094665266
 
     """the code that run the bot and load prefix"""
 
@@ -79,13 +82,10 @@ class SussyBot(commands.Bot,):
                 members=True,
                 emojis=True,
                 guilds=True,
-                reactions=True,
                 message_content=True
             ),
             application_id=976086412313120798,
             help_command=None,
-            connector = aiohttp.TCPConnector(ssl=ssl.create_default_context(cafile=certifi.where()),limit=0)
-
         )
         # variables
 
@@ -94,6 +94,7 @@ class SussyBot(commands.Bot,):
         self.spam_count = Counter()
         self.version = "0.0.1a"
         self.owner_id = 888058231094665266
+        self.support_guild = 939208771929014372
         self.message_prefix_s = "Sussy bot"
         self.changelog = "https://discord.gg/wC37kY3qwH"
         self.dashboard = "https://sussybot.xyz"
@@ -135,8 +136,7 @@ class SussyBot(commands.Bot,):
     # load cogs from other files
 
     async def setup_hook(self) -> None:
-        ssl_cone = ssl.SSLContext
-        Client()
+
         self.aiohttp_session = aiohttp.ClientSession(loop=self.loop)
         self.console_log("client session start")
         self.bot_app_info = await self.application_info()
@@ -147,12 +147,13 @@ class SussyBot(commands.Bot,):
         self.loop.create_task(
             self.startup_tasks(), name="Bot startup tasks"
         )
-        COGS = ["moderation", "member", "error handler", 'test']
+        COGS = ["error handler", 'moderation', 'test','member']
         self.console_log("loading cogs..")
         for cog in COGS:
             await self.load_extension(f"cogs.{cog}")
             self.console_log(f"{cog} loaded ")
-
+        await self.tree.sync()
+        self.tree.copy_global_to(guild=discord.Object(self.support_guild))
         self.console_log("setup hook complete")
 
     # connect to database execute on setup hook, inspired by harmon bot
@@ -184,7 +185,7 @@ class SussyBot(commands.Bot,):
 
         # await self.db.execute("CREATE SCHEMA IF NOT EXISTS chat")
         # await self.db.execute("CREATE SCHEMA IF NOT EXISTS commands")
-        # await self.db.execute("CREATE SCHEMA IF NOT EXISTS guilds")
+        await self.db.execute("CREATE SCHEMA IF NOT EXISTS guilds")
         # await self.db.execute("CREATE SCHEMA IF NOT EXISTS direct_messages")
         # await self.db.execute("CREATE SCHEMA IF NOT EXISTS test")
         # await self.db.execute("CREATE SCHEMA IF NOT EXISTS moderation")
@@ -208,14 +209,74 @@ class SussyBot(commands.Bot,):
         #     )
         #     """
         # )
-        # await self.db.execute(
-        #     """
-        #     CREATE TABLE IF NOT EXISTS guilds.prefixes (
-        #         guild_id		BIGINT PRIMARY KEY,
-        #         prefixes		TEXT
-        #     )
-        #     """
-        # )
+        await self.db.execute(
+            """
+            CREATE TABLE IF NOT EXISTS guilds.prefixes (
+                guild_id		BIGINT,
+                prefixes		TEXT,
+                PRIMARY KEY     (guild_id)
+                
+            )
+            """
+        )
+        await self.db.execute(
+            """
+            CREATE TABLE IF NOT EXISTS test.users (
+                id              BIGINT,
+                blacklisted     boolean DEFAULT FALSE,
+                PRIMARY KEY (id)
+            )
+            """
+        )
+        await self.db.execute(
+            """
+            CREATE TABLE IF NOT EXISTS test.guilds (
+                id       		BIGINT,
+                blacklisted     boolean DEFAULT FALSE,
+                prefix          TEXT,
+                PRIMARY KEY (id)
+            )
+            """
+        )
+        await self.db.execute(
+            """
+            CREATE TABLE IF NOT EXISTS test.warns (
+                id              serial,
+                time            TIMESTAMP DEFAULT NOW() NOT NULL,
+                warning         TEXT,
+                user_id         BIGINT,
+                guild_id        BIGINT,
+                FOREIGN KEY (user_id) REFERENCES test.users(id) ON DELETE CASCADE ON UPDATE CASCADE,
+                FOREIGN KEY (guild_id) REFERENCES test.guilds(id) ON DELETE CASCADE ON UPDATE CASCADE
+            )
+            """
+        )
+        await self.db.execute("""DROP FUNCTION IF EXISTS test.warnfunc""")
+        await self.db.execute(
+            f"""
+                    CREATE OR REPLACE FUNCTION test.warnfunc(BIGINT,BIGINT,TEXT) RETURNS integer
+                    AS $$
+                        DECLARE user_id1 BIGINT = $1;
+                        DECLARE guild_id1 BIGINT = $2;
+                        DECLARE warning1 TEXT = $3;
+                        DECLARE warnid BIGINT;
+                    BEGIN
+                        IF EXISTS(SELECT * FROM test.users WHERE id = user_id1)
+                        AND EXISTS(SELECT * FROM test.guilds WHERE id = guild_id1) THEN
+                            INSERT INTO test.warns(user_id,guild_id,warning)
+                            VALUES(user_id1,guild_id1,warning1) RETURNING id INTO warnid;
+                        ELSE
+                            INSERT INTO test.users(id)
+                            VALUES(user_id1) ON CONFLICT DO NOTHING;
+                            INSERT INTO test.guilds(id)
+                            VALUES(guild_id1) ON CONFLICT DO NOTHING;
+                            INSERT INTO test.warns(user_id,guild_id,warning)
+                            VALUES(user_id1,guild_id1,warning1) RETURNING id INTO warnid;
+                    END IF;
+                    RETURN warnid;
+                    END $$ LANGUAGE plpgsql;
+
+                    """)
         # await self.db.execute(
         #     """
         #     CREATE TABLE IF NOT EXISTS guilds.blacklist (
@@ -274,15 +335,15 @@ class SussyBot(commands.Bot,):
     @staticmethod
     async def get_command_prefix(bot, message: discord.Message):
         prefixes = "$"
-        # if message.channel.type is not discord.ChannelType.private:
-        # prefixes = await bot.db.fetchval(
-        #     """
-        #         SELECT prefixes
-        #         FROM guilds.prefixes
-        #             WHERE guild_id = $1
-        #         """,
-        #     message.guild.id
-        # )
+        if message.channel.type is not discord.ChannelType.private:
+            prefixes = await bot.db.fetchval(
+                """
+                    SELECT prefix
+                    FROM test.guilds
+                       WHERE id = $1
+                    """,
+                message.guild.id
+            )
 
         return prefixes if prefixes else "$"
 
@@ -309,7 +370,7 @@ class SussyBot(commands.Bot,):
     async def on_guild_join(self, guild):  # when the bot joins the guild
         await self.db.execute(
             """
-            INSERT INTO guilds.prefixes (guild_id, prefixes)
+            INSERT INTO test.guilds (id, prefixe)
             VALUES ($1, $2)
             ON CONFLICT (guild_id) DO NOTHING
             """,
@@ -322,7 +383,7 @@ class SussyBot(commands.Bot,):
     async def on_guild_remove(self, guild):
         await self.db.execute(
             """
-            DELETE FROM guilds.prefixes 
+            DELETE FROM test.guild 
             WHERE guild_id = $1
             """,
             guild.id
@@ -333,8 +394,7 @@ class SussyBot(commands.Bot,):
         await self.change_status.start()
 
     async def start(self) -> None:
-        await super().start(token, reconnect=True,)
-
+        await super().start(token, reconnect=True, )
 
     async def close(self) -> None:
         try:
@@ -357,13 +417,13 @@ class SussyBot(commands.Bot,):
         if ctx.author.bot:
             return
 
-        bucket = self.spam_cooldown.get_bucket(message)
-        current = message.created_at.timestamp()
-        retry_after = bucket.update_rate_limit(current)
-        author_id = message.author.id
-        if retry_after:
-            self.spam_count[author_id] += 1
-        logging.warning(self.spam_count)
+        # bucket = self.spam_cooldown.get_bucket(message)
+        # current = message.created_at.timestamp()
+        # retry_after = bucket.update_rate_limit(current)
+        # author_id = message.author.id
+        # if retry_after:
+        #     self.spam_count[author_id] += 1
+        # logging.warning(self.spam_count)
         await self.invoke(ctx)
 
     # bot monitor
@@ -393,7 +453,7 @@ class SussyBot(commands.Bot,):
     async def on_message(self, message):
 
         if message.channel.type is not discord.ChannelType.private:
-            check = False
+            check = True
             a = ["keep your mouth close",
                  " dont disturb me :)",
                  "stfu",

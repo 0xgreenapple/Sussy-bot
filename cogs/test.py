@@ -7,14 +7,19 @@ import typing
 
 from bot import SussyBot
 from datetime import datetime, timedelta
-from discord import app_commands
+from discord import app_commands, Interaction
 from discord.ext import commands
-from discord.ext.commands import cooldown, BucketType
+from discord.ext.commands import BucketType
+from discord.app_commands.checks import cooldown
+from discord.app_commands import checks
 
-from handler.view import refresh_ping,delete_view
+from handler.view import refresh_ping, delete_view
+
+
 class test(commands.Cog):
     def __init__(self, bot: SussyBot):
         self.bot = bot
+
 
     """@commands.command()
     async def roletest(self,ctx,role: discord.Role):
@@ -129,13 +134,14 @@ class test(commands.Cog):
     """ def get_bot_uptime(self, *, brief: bool = False) -> str:
         return time.human_timedelta(self.bot.uptime, accuracy=None, brief=brief, suffix=False)"""
 
-    @commands.hybrid_command(name="stats", description="Get bot system information")
-    @cooldown(1, 10, BucketType.user)
-    async def stats(self, ctx: commands.Context):
-        a = self
-        print(self)
+    @app_commands.command(name="stats", description="Get bot system information")
+    @app_commands.checks.cooldown(1, 5.0, key=lambda i: (i.guild_id, i.user.id))
+    async def stats(self, Interaction: Interaction):
         ping = self.bot.latency * 1000
-
+        asss = time.perf_counter_ns()
+        a = await self.bot.db.execute('SELECT 1')
+        all = time.perf_counter_ns() - asss
+        print(all/ 1000 ** 2)
         if 100 <= ping <= 200:
             ping_status = "neutral"
         elif ping <= 100:
@@ -174,12 +180,16 @@ class test(commands.Cog):
                               f"**cpu :** ``{psutil.cpu_percent()}``%"
                         , inline=False)
         bedem.add_field(name="command ran today", value=f"```18238183```")
-        bedem.set_author(name=ctx.author.name, icon_url=ctx.author.avatar.url)
+        bedem.set_author(name=Interaction.user.name, icon_url=Interaction.user.avatar.url)
         bedem.set_footer(text="\u200b", icon_url=self.bot.user.avatar.url)
-        view = refresh_ping(ctx,self.bot)
-        view.message = await ctx.send(embed=bedem,view=view)
+        view = refresh_ping(Interaction, self.bot)
+        await Interaction.response.send_message(embed=bedem, view=view)
+        view.message = await Interaction.original_message()
+        return view.message
 
     @app_commands.command(name="hello")
+    @app_commands.guilds()
+
     async def hello1(self, interaction=discord.Interaction):
         await interaction.response.send_message("hello")
 
@@ -197,8 +207,6 @@ class test(commands.Cog):
         embed.set_footer(text="size default (512x512)")
         embed.set_author(name=ctx.author.display_name, icon_url=ctx.author.avatar.url)
         await ctx.send(embed=embed)
-
-
 
     @commands.command()
     async def userinfo(self, ctx, memder: typing.Union[discord.Member, discord.User] = None):
@@ -391,8 +399,6 @@ class test(commands.Cog):
                     g = "general"
                     await ctx.send("general")
 
-
-
     async def shop(self, member: typing.Union[discord.Member, discord.User]):
         emoji = []
 
@@ -428,8 +434,7 @@ class test(commands.Cog):
     a = discord.User
 
     @commands.command(name="member")
-
-    async def test123(self,ctx:commands.Context):
+    async def test123(self, ctx: commands.Context):
         a = ""
         b = 0
         for i in range(1, 100):
@@ -450,3 +455,4 @@ class test(commands.Cog):
 async def setup(bot: SussyBot) -> None:
     await bot.add_cog(
         test(bot))
+

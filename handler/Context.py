@@ -50,3 +50,7 @@ class Context(commands.Context):
         channel = await member.create_dm()
 
         return await channel.send(content=message, embed=embed, view=view)
+
+
+async def heloo(ctx:discord.Interaction):
+    await ctx.response.send_message("hello world")

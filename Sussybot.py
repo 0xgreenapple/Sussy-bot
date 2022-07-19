@@ -1,12 +1,20 @@
+from enum import Enum
+
+import discord
 import subprocess
 
 import ssl
 
 import os
+from discord.app_commands import checks, Choice
+from discord.ext import commands
 
 from pympler.tracker import SummaryTracker
 import contextlib
 
+class True_Or_False(Enum):
+    true = 'true'
+    false = 'false'
 tracker = SummaryTracker()
 if __name__ == "__main__":
     import logging
@@ -14,6 +22,10 @@ if __name__ == "__main__":
     import sys
     from bot import SussyBot
     from handler import errors
+    from discord import app_commands
+    from handler.checks import owner_only
+    from handler.Context import heloo
+    from handler import utils
     import asyncio
 
     client = SussyBot()
@@ -34,16 +46,17 @@ if __name__ == "__main__":
     async def pre(ctx):
         prefixes = await client.db.fetchval(
             """
-            SELECT prefixes
-            FROM guilds.prefixes
-            WHERE guild_id = $1
+            SELECT prefix
+            FROM test.guilds
+            WHERE id = $1
             """,
             ctx.guild.id
         )
+        logging.warning(prefixes)
         if prefixes is None:
             await client.db.execute(
                 """
-                INSERT INTO guilds.prefixes (guild_id, prefixes)
+                INSERT INTO test.guilds (id, prefix)
                 VALUES($1,$2)
                 ON CONFLICT DO NOTHING
                 """,
@@ -90,6 +103,113 @@ if __name__ == "__main__":
             await ctx.send("hello")
         elif prefixes != None:
             await ctx.send("yes")
+
+    bot = app_commands.Group(name='bot', description='the configuration commands for the bot'
+                             , guild_ids=[client.support_guild])
+
+
+    @bot.command(name='reload')
+    @app_commands.checks.has_permissions(ban_members=True)
+    @app_commands.choices(
+        colour=[  # param name
+            Choice(name="Red", value='True'),
+            Choice(name="Green", value='True'),
+            Choice(name="Blue", value="blue")
+        ],
+        embeds=[  # param name
+            Choice(name="Red", value='a'),
+            Choice(name="Green", value='True'),
+            Choice(name="Blue", value="blue")
+        ]
+
+    )
+    async def reload(interaction: discord.Interaction, colour:Choice[str] , embeds:Choice[str], lol:str):
+        await interaction.response.send_message(colour)
+
+
+    @bot.command()
+    async def fruits(interaction: discord.Interaction, fruits: typing.Literal['lolol','false']):
+        print(fruits)
+        if fruits == True_Or_False.true:
+            interaction.response.send_message('bruh')
+        if fruits == 'true':
+            interaction.response.send_message('lo')
+
+
+
+
+    @bot.command(name='load-cog', description='hello world')
+    @owner_only()
+    async def load_cog(interaction: discord.Interaction, cog: str):
+        '''Load cog'''
+        try:
+            await client.load_extension("cogs." + cog)
+        except commands.ExtensionAlreadyLoaded:
+            print(f"Cog already loaded")
+        except commands.ExtensionFailed as e:
+            print(
+                f"Error loading cog: {e.original.__class__.__name__}: {e.original}")
+        except commands.ExtensionNotFound:
+            print(f"Error: Cog not found")
+        except commands.NoEntryPointError:
+            print(f" Error: Setup function not found")
+        except commands.ExtensionError as e:
+            print(f" Error: {e}")
+        except Exception as e:
+            print(
+                f"\N{THUMBS DOWN SIGN} Failed to load `{cog}` cog\n{type(e).__name__}: {e}")
+        else:
+            print(f"\N{THUMBS UP SIGN} Loaded `{cog}` cog \N{GEAR}")
+
+
+    @bot.command(name="unload-cog")
+    @owner_only()
+    async def unload(ctx, cog: str):
+        '''Unload cog'''
+        try:
+            await client.unload_extension("cogs." + cog)
+        except commands.ExtensionNotLoaded:
+            print(f"Error: Cog not found/loaded")
+        except commands.ExtensionError as e:
+            print(f" Error: {e}")
+        except Exception as e:
+            print(
+                f"\N{THUMBS UP SIGN} Failed to unload `{cog}` cog\n{type(e).__name__}: {e}")
+        else:
+            print(f"\N{OK HAND SIGN} Unloaded `{cog}` cog \N{GEAR}")
+
+
+    @bot.command(name='reload-cog')
+    @owner_only()
+    async def reload(ctx, cog: str):
+        '''Reload cog'''
+        try:
+            await client.reload_extension("cogs." + cog)
+        except commands.ExtensionFailed as e:
+            print(
+                f" Error loading cog: {e.original.__class__.__name__}: {e.original}")
+        except commands.ExtensionNotFound:
+            print(f"Error: Cog not found")
+        except commands.ExtensionNotLoaded:
+            print(f" Error: Cog not found/loaded")
+        except commands.NoEntryPointError:
+            print(f" Error: Setup function not found")
+        except commands.ExtensionError as e:
+            print(f" Error: {e}")
+        except Exception as e:
+            print(
+                f"\N{THUMBS DOWN SIGN} Failed to reload `{cog}` cog\n{type(e).__name__}: {e}")
+        else:
+            print(f"\N{THUMBS UP SIGN} Reloaded `{cog}` cog \N{GEAR}")
+
+
+    @bot.command(name='disconnect')
+    @owner_only()
+    async def disconnect(ctx):
+        '''this is for emergency'''
+        await client.close()
+
+    client.tree.add_command(bot)
 
 
     @contextlib.contextmanager

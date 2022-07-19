@@ -1,3 +1,5 @@
+import asyncio
+
 import contextlib
 import json
 import os
@@ -10,7 +12,8 @@ dotenv.load_dotenv()
 
 password = os.environ.get('DBPASSWORD')
 host = os.environ.get('DBHOST')
-
+print(password)
+print(host)
 
 @contextlib.asynccontextmanager
 async def create_database_connection():
@@ -22,6 +25,7 @@ async def create_database_connection():
         host=host
     )
     await initialize_database_connection(connection)
+    await asyncio.sleep(1)
     try:
         yield connection
     finally:
@@ -31,6 +35,8 @@ async def create_database_connection():
 async def create_database_pool():
     print('pool')
     return await asyncpg.create_pool(
+        min_size=7,
+        max_size=20,
         user="postgres",
         password=password,
         database="sussydb",
