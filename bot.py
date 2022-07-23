@@ -30,7 +30,6 @@ import contextlib
 from glob import glob
 from itertools import cycle
 
-import bot
 from handler.Context import Context
 from handler.database import create_database_pool
 from platform import python_version
@@ -82,8 +81,10 @@ class SussyBot(commands.Bot):
                 members=True,
                 emojis=True,
                 guilds=True,
-                message_content=True
+                message_content=True,
+
             ),
+
             application_id=976086412313120798,
             help_command=None,
         )
@@ -124,7 +125,8 @@ class SussyBot(commands.Bot):
         # Emojis
         self.channel_emoji = '<:channel:990574854027743282>'
         self.search_emoji = '<:icons8search100:975326725472944168>'
-        self.failed_emoji = '<:icons8cancel100:975326725439373312>'
+        self.failed_emoji = '<:icons8closewindow100:975326725426778184>'
+        self.success_emoji = '<:icons8ok100:975326724747304992>'
         self.right = '<:icons8chevronright100:975326725158346774>'
         self.file_emoji = '<:icons8document100:975326725229641781>'
 
@@ -152,12 +154,13 @@ class SussyBot(commands.Bot):
         for cog in COGS:
             await self.load_extension(f"cogs.{cog}")
             self.console_log(f"{cog} loaded ")
-        await self.tree.sync()
-        self.tree.copy_global_to(guild=discord.Object(self.support_guild))
+        # await self.tree.sync()
+        # self.tree.copy_global_to(guild=discord.Object(self.support_guild))
         self.console_log("setup hook complete")
 
     # connect to database execute on setup hook, inspired by harmon bot
     async def connect_to_database(self):
+        print('connecto to database')
         if self.database_connection_pool:
             return
         if self.connected_to_database.is_set():
@@ -169,6 +172,7 @@ class SussyBot(commands.Bot):
 
     # setup database and create tables
     async def initialize_database(self):
+        print('dataase intialzie')
         await self.connect_to_database()
         await self.db.execute("CREATE SCHEMA IF NOT EXISTS test")
         await self.db.execute(

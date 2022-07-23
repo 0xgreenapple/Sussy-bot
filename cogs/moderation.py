@@ -1,7 +1,8 @@
 from __future__ import annotations
 
+import io
+
 import asyncpg
-import datetime
 
 import time
 
@@ -19,9 +20,10 @@ from discord.ext.commands import cooldown, BucketType
 from discord.ext.menus.views import ViewMenuPages
 
 from handler.pagination import SimplePages
+from handler.utils import string_to_delta
 from handler.view import delete_view, userinfo, interaction_delete_view
 from handler.checks import is_permitted, is_lower_role
-from datetime import timedelta
+from datetime import timedelta, datetime
 from discord.app_commands import Choice
 from enum import Enum
 from handler import utils
@@ -34,46 +36,11 @@ if TYPE_CHECKING:
 log = logging.getLogger(__name__)
 
 
-class Arguments(argparse.ArgumentParser):
-    def error(self, message: str):
-        raise RuntimeError(message)
-
-
-class MySource(menus.ListPageSource):
-    def __init__(self, data):
-        super().__init__(data, per_page=4)
-
-    async def format_page(self, menu, entries):
-        print(entries)
-        offset = menu.current_page * self.per_page
-
-        return '\n'.join(f'{i}. {v}' for i, v in enumerate(entries, start=offset))
-
-
-class EmbedPageSource(menus.ListPageSource):
-    async def format_page(self, menu, item):
-        embed = discord.Embed(title=item)
-        # you can format the embed however you'd like
-        return embed
-
-
 class Warningspages(SimplePages):
     def __init__(self, entries: list, *, ctx: discord.Interaction, per_page: int = 12, title: str = None):
         converted = entries
         print(entries)
         super().__init__(converted, per_page=per_page, ctx=ctx, title=title)
-
-
-class True_Or_False(Enum):
-    true = True
-    false = False
-
-
-async def formate_page(list: list, per_page: int):
-    count = 1
-    for i in list:
-        count += 1
-        print(i)
 
 
 async def bulk_delete_advance(
@@ -113,20 +80,21 @@ class moderation(commands.Cog):
     # delete the message under 14 days.
 
     # clear command
-    @app_commands.command(name='purge', description="clear the messages of a channel in best way possible")
+    @app_commands.command(name='purge', description="clear the messages of a channel in the best way possible")
     @app_commands.default_permissions(manage_messages=True)
     @app_commands.checks.bot_has_permissions(manage_messages=True)
     @app_commands.checks.has_permissions(manage_messages=True)
     @app_commands.checks.cooldown(1, 5.0, key=lambda i: (i.guild_id, i.user.id))
     @app_commands.guild_only()
     @app_commands.describe(
-        contain='delete the message that content given word. separate by comma',
+        contain='delete the message that content given word. separate by comma!',
         startswith='delete the messages that starts with given word. separate by comma',
         user='only delete the message of specific user',
         embeds='delete the message that contain embeds',
         files='delete the message contains files',
         reactions='delete the message contains reactions',
-        delete_type='If set true, delete only messages matching all conditions'
+        delete_type='If set true, delete only messages matching all conditions',
+        hide='hide the response message if set to true'
     )
     async def clear(self, interaction: discord.Interaction, limit: app_commands.Range[int, 1, 100] = 10,
                     delete_type: typing.Literal['true', 'false'] = None, *,
@@ -134,7 +102,7 @@ class moderation(commands.Cog):
                     contain: str = None, startswith: str = None, endswith: str = None,
                     embeds: typing.Literal['true', 'false'] = None,
                     files: typing.Literal['true', 'false'] = None, reactions: typing.Literal['true', 'false'] = None,
-                    mentions: typing.Literal['true', 'false'] = None):
+                    mentions: typing.Literal['true', 'false'] = None, hide: typing.Literal['true', 'false'] = None):
 
         """advance clear command that delete the messages
          from the channel that is under 14 days as given argument.
@@ -145,6 +113,8 @@ class moderation(commands.Cog):
          `!contain` : delete the message that contain given word
         """
         # emojis
+        if hide == 'true':
+            await interaction.response.defer(thinking=True, ephemeral=True)
 
         purge_embed = discord.Embed(colour=self.bot.embed_colour, timestamp=discord.utils.utcnow())
         purge_embed.set_footer(text='\u200b', icon_url=interaction.user.avatar.url)
@@ -152,7 +122,7 @@ class moderation(commands.Cog):
         view = interaction_delete_view(interaction)
         message = discord.utils.utcnow() - timedelta(days=14)
         predicates = []
-
+        await interaction.response.defer(thinking=True, ephemeral=True)
         if embeds == 'true':
             log.warning('embeds')
             predicates.append(lambda m: len(m.embeds) and m.created_at >= message)
@@ -198,26 +168,29 @@ class moderation(commands.Cog):
                   f"{self.bot.right} **message requested :** ``{limit}`` \n"
                   f"{self.bot.search_emoji} **deleted :** ``{len(message)}`` \n"
                   f"{self.bot.failed_emoji} failed : ``{limit - len(message)}``")
-
-        await interaction.response.send_message(embed=purge_embed, view=view)
-        view.message = await interaction.original_message()
+        if interaction.response.is_done():
+            await interaction.followup.send(embed=purge_embed)
+            return
+        else:
+            await interaction.followup.send(embed=purge_embed, view=view)
+            view.message = await interaction.original_message()
+            return view.message
 
     # warn member
     @app_commands.guild_only()
-    @app_commands.command(name='warn', description='warn a user with reason')
+    @app_commands.command(name='warn', description='warn a member, warnings are saved in the bot database')
     @app_commands.checks.has_permissions(kick_members=True)
     @app_commands.checks.bot_has_permissions(kick_members=True)
     @app_commands.default_permissions(kick_members=True)
     @app_commands.checks.cooldown(1, 5.0, key=lambda i: (i.guild_id, i.user.id))
     @app_commands.describe(
         member='member to warn, |id|mention|tag|',
-        reason='reason for warn'
+        reason='reason for warning'
     )
     async def warn(self, interaction: discord.Interaction, member: discord.Member, *,
                    reason: app_commands.Range[str, 1, 250] = None):
 
         if member.id == interaction.user.id:
-            print('cant war yourself')
             await utils.error_embed(
                 error_name='warn command error', error_dis='you cant warn yourself', bot=self.bot,
                 Interaction=interaction)
@@ -288,8 +261,9 @@ class moderation(commands.Cog):
         await interaction.followup.send(embed=dm_info_embed, view=view)
         view.message = await interaction.original_message()
         return view.message
+
     @app_commands.guild_only()
-    @app_commands.command(name='warns')
+    @app_commands.command(name='warns', description='get the all warnings of a user')
     @app_commands.default_permissions(kick_members=True)
     @app_commands.checks.has_permissions(kick_members=True)
     @app_commands.checks.bot_has_permissions(kick_members=True)
@@ -316,15 +290,14 @@ class moderation(commands.Cog):
                 warninglist.append({'id': warning.get("id"), 'time': time, 'reason': 'no reason'})
 
         if warns:
-
             warnings = Warningspages(entries=warninglist, per_page=5, ctx=interaction,
                                      title=f'``{member}`` warnings [{len(warninglist)}]')
             await warnings.start()
         if warns is None:
-
             await interaction.followup.send('this user has no warnings', ephemeral=True)
 
-    @app_commands.command(name='clearwarnings', description='clear the warnings of a user')
+    @app_commands.command(name='clearwarnings', description='clear the warnings of member,view warnings by running '
+                                                            '/warns command')
     @app_commands.guild_only()
     @app_commands.checks.has_permissions(kick_members=True)
     @app_commands.checks.bot_has_permissions(kick_members=True)
@@ -350,7 +323,7 @@ class moderation(commands.Cog):
         # show the interaction message
         await interaction.response.defer()
         warnings = 0
-        allcleard = False
+        all_cleard = False
         value = await self.bot.db.fetch(
             """
             SELECT * FROM test.warns 
@@ -368,7 +341,7 @@ class moderation(commands.Cog):
                 member.id, interaction.guild.id
             )
             warnings = len(value)
-            allcleard = True
+            all_cleard = True
         else:
             if len(value) is None:
                 await utils.error_embed(
@@ -409,7 +382,7 @@ class moderation(commands.Cog):
         return view.message
 
     # kick command
-    @app_commands.command(name='kick', description="kick a user")
+    @app_commands.command(name='kick', description="kick member of server")
     @app_commands.guild_only()
     @app_commands.checks.cooldown(1, 5.0, key=lambda i: (i.guild_id, i.user.id))
     @app_commands.checks.has_permissions(kick_members=True)
@@ -459,16 +432,24 @@ class moderation(commands.Cog):
             kick_embed.description = f'{self.bot.file_emoji} **reason :** no reason provided'
         if dm == 'true':
             try:
+                dm_view = interaction_delete_view(interaction)
+                dm_kick_embed = discord.Embed(
+                    title=f'You have been kicked from ``{interaction.guild.name}`` server',
+                    description=f'{self.bot.file_emoji} **reason :** {reason if reason else "no reason"}',
+                    timestamp=discord.utils.utcnow()
+                ).set_footer(text='\u200b', icon_url=interaction.user.avatar.url)
+
                 channel = await member.create_dm()
-                await channel.send(f"you have been kicked from the server for "
-                                   f"{reason} ")
+                message = await channel.send(embed=dm_kick_embed, view=dm_view)
+                dm_view.message = message
+
                 dm_value = True
             except discord.Forbidden or discord.HTTPException:
                 dm_value = 'dm failed'
         try:
 
             dm_value = dm_value if dm_value else 'false'
-            reason = reason if reason else None
+            reason = f'[{reason}]- {interaction.user}' if reason else f'[no reason] -{interaction.user}'
             await interaction.guild.kick(user=member, reason=reason)
             if days:
                 days = discord.utils.utcnow() - timedelta(days=days)
@@ -518,7 +499,6 @@ class moderation(commands.Cog):
         ban_embed = discord.Embed(title=f'{ejected} ``ban``')
         ban_embed.set_footer(text='\u200b', icon_url=interaction.user.avatar.url)
         member_or_not = interaction.guild.get_member(user.id)
-        log.warning('started')
         if user.id == interaction.user.id:
             await utils.error_embed(
                 Interaction=interaction,
@@ -535,37 +515,37 @@ class moderation(commands.Cog):
                     error_name='ban command error',
                     error_dis="you must have lower role than given member!")
                 return
-        log.warning('middile')
+
         delete = days if days else 0
         created_at = round(int(mktime(user.created_at.timetuple())))
         joined_at = round(int(mktime(user.joined_at.timetuple()))) if member_or_not else None
         dm_value = ''
-        log.warning('reason')
+
         if reason:
-            log.warning('setting up reason')
             ban_embed.description = f'{self.bot.file_emoji} **reason :** {reason}'
         else:
             reason = None
             ban_embed.description = f'{self.bot.file_emoji} **reason :** no reason provided'
 
-        log.warning('dm')
         if dm == 'true' and not user.bot:
-            log.warning('trying to send dm')
             try:
-                log.warning('createdm')
+                dm_view = interaction_delete_view(interaction)
+                dm_ban_embed = discord.Embed(
+                    title=f'You have been banned from ``{interaction.guild.name}`` server',
+                    description=f'{self.bot.file_emoji} **reason :** {reason if reason else "no reason"}',
+                    timestamp=discord.utils.utcnow()
+                ).set_footer(text='\u200b', icon_url=interaction.user.avatar.url)
                 channel = await user.create_dm()
-                log.warning('senddm')
-                await channel.send(f"you have been banned from the server for {reason} ")
-                log.warning('succes')
+                message = await channel.send(embed=dm_ban_embed)
+                dm_view.message = message
                 dm_value = True
-                log.warning('succes')
             except discord.Forbidden or discord.HTTPException:
-                log.warning('failed')
+
                 dm_value = 'dm failed'
         try:
-            log.warning('ban reached')
+
             dm_value = dm_value if dm_value else 'false'
-            reason = reason if reason else None
+            reason = f'[{reason}]- {interaction.user}' if reason else f'[no reason] -{interaction.user}'
             await interaction.guild.ban(user=user, reason=reason, delete_message_days=0)
         except discord.Forbidden or discord.HTTPException:
             await utils.error_embed(
@@ -591,7 +571,6 @@ class moderation(commands.Cog):
                                       f'``ID``:{user.id} \n'
                                       f'**created at :** <t:{created_at}:D>'
                                 )
-        log.warning('tring to send the message')
         view = interaction_delete_view(interaction)
         await interaction.response.send_message(embed=ban_embed, view=view)
         view.message = await interaction.original_message()
@@ -633,6 +612,7 @@ class moderation(commands.Cog):
             except discord.Forbidden or discord.HTTPException:
                 dm_value = 'failed'
         try:
+            reason = f'[{reason}]- {interaction.user}' if reason else f'[no reason] -{interaction.user}'
             await interaction.guild.unban(user=user, reason=reason)
         except discord.NotFound:
             await utils.error_embed(
@@ -662,6 +642,172 @@ class moderation(commands.Cog):
                   f'**created at :** <t:{round(int(mktime(user.created_at.timetuple())))}:D>')
         view = interaction_delete_view(interaction)
         view.message = await interaction.response.send_message(embed=ban_embed, view=view)
+
+    timeout = app_commands.Group(
+        name="timeout",
+        description="add, update,remove timeout",
+        guild_only=True,
+        default_permissions=discord.Permissions(moderate_members=True)
+    )
+
+    @app_commands.command(name='timeout', description='timeout or update timeout of a member ')
+    @app_commands.guild_only()
+    @app_commands.default_permissions(moderate_members=True)
+    @app_commands.checks.has_permissions(moderate_members=True)
+    @app_commands.checks.bot_has_permissions(moderate_members=True)
+    @app_commands.describe(
+        member='the member who you want to timeout',
+        duration='must be in 1d|1h|1m|1s formate',
+        reason='the reason to timeout the member',
+    )
+    async def timeout(self, interaction: discord.Interaction, member: discord.Member, *,
+                      duration: str = None, reason: str = None):
+
+        if member.id == interaction.user.id:
+            await utils.error_embed(
+                Interaction=interaction,
+                bot=self.bot,
+                error_name='timeout command error',
+                error_dis='you cant ban your self! are you crazy?')
+            return
+
+        if not await is_lower_role(interaction, member=member):
+            await utils.error_embed(
+                bot=self.bot,
+                Interaction=interaction,
+                error_name='timeout command error',
+                error_dis="you must have lower role than given member!")
+            return
+
+        if member.bot:
+            await utils.error_embed(
+                bot=self.bot,
+                Interaction=interaction,
+                error_name='timeout command error',
+                error_dis="cant timeout this user!")
+            return
+        await interaction.response.defer(thinking=True)
+
+        # variables
+        failed = False
+        reason_Msg = reason if reason else 'no reason'
+        reason = f'[{reason}] - {interaction.user}' if reason else f'[no reason] - {interaction.user}'
+        time_delta = string_to_delta(duration)
+
+        time_delta = time_delta if time_delta else timedelta(days=28)
+
+        try:
+            await member.timeout(time_delta, reason=reason)
+        except discord.HTTPException:
+            failed = True
+        timestamp = round(int(mktime((datetime.now() - time_delta).timetuple())))
+        timeout_info_embed = discord.Embed(
+            title=f'**``timeout``**', timestamp=discord.utils.utcnow()
+        ).set_footer(text='\u200b',
+                     icon_url=interaction.user.display_avatar.replace(size=32).url
+                     )
+
+        if not failed:
+            if member.is_timed_out():
+                timedoutfor = round(int(mktime(member.timed_out_until.timetuple())))
+                timeout_info_embed.title = f'**``timeout update``**'
+                timeout_info_embed.add_field(name=f'{self.bot.right} __{member.name}__ timeout has been updated',
+                                             value=f'>>> {self.bot.file_emoji} **reason :** {reason_Msg} \n'
+                                                   f'before: <t:{timedoutfor}:f>\n'
+                                                   f'after: <t:{timestamp}:f> \n'
+                                                   f'``failed``: {self.bot.failed_emoji}')
+            else:
+                timeout_info_embed.add_field(name=f'{self.bot.right} __{member.name}__ has been timed out',
+                                             value=f'>>> {self.bot.file_emoji} **reason :** {reason_Msg} \n'
+                                                   f'**until**: <t:{timestamp}:f> \n'
+                                                   f'``failed``: {self.bot.failed_emoji}')
+        else:
+            timeout_info_embed.title = f'**``timeout failed``**'
+            timeout_info_embed.add_field(name=f'{self.bot.right} __{member.name}__ has been timed out',
+                                         value=f'>>> {self.bot.file_emoji} **reason :** {reason_Msg} \n'
+                                               f'``failed``: {self.bot.success_emoji}')
+        view = interaction_delete_view(interaction)
+        await interaction.followup.send(
+            embed=timeout_info_embed, view=view
+        )
+
+        view.message = await interaction.original_message()
+        return view.message
+
+    @app_commands.command(name='removetimeout', description='remove timeout of a user')
+    @app_commands.guild_only()
+    @app_commands.default_permissions(moderate_members=True)
+    @app_commands.checks.has_permissions(moderate_members=True)
+    @app_commands.checks.bot_has_permissions(moderate_members=True)
+    @app_commands.describe(
+        member='the member who you want to remove timeout',
+        reason='the reason to remove timeout of the member'
+    )
+    async def removetimeout(self, interaction: discord.Interaction, member: discord.Member, *, reason: str = None):
+
+        if not await is_lower_role(interaction, member=member):
+            await utils.error_embed(
+                bot=self.bot,
+                Interaction=interaction,
+                error_name='timeout command error',
+                error_dis="you must have lower role than given member!")
+            return
+        if not member.is_timed_out():
+            await utils.error_embed(
+                Interaction=interaction,
+                bot=self.bot,
+                error_name='timeout command error',
+                error_dis='the member is already not timed out')
+            return
+
+        # defer the interaction
+        await interaction.response.defer()
+        # variables
+        reason_msg = reason if reason else 'no reason'
+        reason = f'[{reason}] - {interaction.user}' if reason else f'[no reason] - {interaction.user}'
+        failed = False
+        try:
+            await member.edit(timed_out_until=None, reason=reason)
+        except discord.HTTPException or discord.Forbidden:
+            failed = True
+        if failed:
+            info_embed = discord.Embed(
+                title=f'``failed to remove timeout``',
+                description=
+                f'{self.bot.right} **user**: {member.mention} \n'
+                f'**timeout until** : <t:{round(int(mktime(member.timed_out_until.timetuple())))}:f> \n'
+                f'``failed?:``{self.bot.success_emoji if failed else self.bot.failed_emoji} \n',
+                colour=self.bot.embed_colour, timestamp=discord.utils.utcnow()
+            ).set_footer(text='\u200b',
+                         icon_url=interaction.user.display_avatar.replace(size=32).url
+                         )
+        else:
+            info_embed = discord.Embed(
+                title=f'``{member.name} timeout has been removed ``',
+                description=
+                f'{self.bot.file_emoji} **reason** : {reason_msg} \n'
+                f'{self.bot.right} **moderator**: {member.mention} \n'
+                f'**timeout was until** : <t:{round(int(mktime(member.timed_out_until.timetuple())))}:f> \n'
+                f'``failed?:``{self.bot.success_emoji if failed else self.bot.failed_emoji} \n',
+                colour=self.bot.embed_colour, timestamp=discord.utils.utcnow()
+            ).set_footer(text='\u200b',
+                         icon_url=interaction.user.display_avatar.replace(size=32).url
+                         )
+        view = interaction_delete_view(interaction)
+        await interaction.followup.send(embed=info_embed, view=view)
+        view.message = await interaction.original_message()
+        return view.message
+
+
+
+
+
+
+
+
+
+
+
 
     @commands.command(name='leave')
     @commands.guild_only()

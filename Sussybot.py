@@ -220,9 +220,10 @@ if __name__ == "__main__":
             # __enter__
             max_bytes = 32 * 1024 * 1024  # 32 MiB
             logging.getLogger('discord').setLevel(logging.INFO)
-            logging.getLogger('asyncio').setLevel(logging.DEBUG)
+            logging.getLogger('asyncio').setLevel(logging.INFO)
 
             logging.getLogger('asyncpg').setLevel(logging.DEBUG)
+            logging.getLogger('asyncpg').setLevel(logging.INFO)
             logging.getLogger('discord.http').setLevel(logging.INFO)
             logging.getLogger('aiohttp.client').setLevel(logging.WARNING)
             logging.getLogger('aiohttp.server').setLevel(logging.WARNING)

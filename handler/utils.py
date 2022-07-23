@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import time
 
@@ -59,10 +59,13 @@ async def send_dm(member=discord.Member, *, message: str = None, embed: discord.
     logging.warning('succes')
     return await channel.send(content=message, embed=embed, view=view)
 
+
 def datetime_to_local_timestamp(utc_datetime):
     now_timestamp = time.time()
     offset = datetime.fromtimestamp(now_timestamp) - datetime.utcfromtimestamp(now_timestamp)
     return round(int(time.mktime((utc_datetime + offset).timetuple())))
+
+
 def format_ns(self, ns):
     if ns > 1000 ** 3:
         return f"{ns / 1000 ** 3} s"
@@ -72,3 +75,36 @@ def format_ns(self, ns):
         return f"{ns / 1000} µs"
     else:
         return f"{ns} ns"
+
+
+def string_to_delta(input):
+    if input is None:
+        return
+    slice_num = -1
+    slice_object = slice(-1)
+    time_in_delta = None
+    input = input.lower()
+
+    try:
+        int(input[slice_object])
+    except ValueError:
+        return
+
+    if input.endswith('d'):
+        ab = slice(slice_num)
+        a = input[ab]
+        time_in_delta = timedelta(days=int(a))
+    if input.endswith('h'):
+        ab = slice(slice_num)
+        a = input[ab]
+        time_in_delta = timedelta(hours=int(a))
+    if input.endswith('m'):
+        ab = slice(slice_num)
+        a = input[ab]
+        time_in_delta = timedelta(minutes=int(a))
+    if input.endswith('s'):
+        ab = slice(slice_num)
+        a = input[ab]
+        time_in_delta = timedelta(seconds=int(a))
+    time_in_delta = time_in_delta
+    return time_in_delta

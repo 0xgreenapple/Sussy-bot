@@ -232,11 +232,14 @@ class interaction_delete_view(discord.ui.View):
 
     @discord.ui.button(label='delete', style=discord.ButtonStyle.danger)
     async def delete_button(self, interaction: discord.Interaction, button):
-        if interaction.user.id == self.ctx.user.id or interaction.user.id == self.ctx.guild.owner.id:
+        if interaction.channel.type == discord.ChannelType.private:
             await interaction.message.delete()
-            return
         else:
-            await interaction.response.send_message('this is not for you lol', ephemeral=True)
+            if interaction.user.id == self.ctx.user.id or interaction.user.id == self.ctx.guild.owner.id:
+                await interaction.message.delete()
+                return
+            else:
+                await interaction.response.send_message('this is not for you lol', ephemeral=True)
 
     async def on_timeout(self) -> None:
         for item in self.children:
