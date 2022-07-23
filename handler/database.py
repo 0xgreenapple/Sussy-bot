@@ -37,7 +37,6 @@ async def create_database_pool():
         password=password,
         database="sussydb",
         host=host,
-        port=5432,
         init=initialize_database_connection
     )
 
