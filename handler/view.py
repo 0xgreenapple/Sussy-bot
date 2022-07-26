@@ -1,19 +1,20 @@
 from __future__ import annotations
 
+import typing
+
 import logging
 import time
 from datetime import datetime, timedelta
 
 import discord
-
 from typing import TYPE_CHECKING, Optional
 from logging import getLogger
-
 import psutil
 
 if TYPE_CHECKING:
     from .Context import Context
-    from bot import SussyBot
+import bot
+
 
 log = getLogger(__name__)
 
@@ -118,12 +119,12 @@ class refresh_ping(discord.ui.View):
     def __init__(
             self,
             ctx: discord.Interaction,
-            bot: SussyBot
+            bot: bot.SussyBot
 
     ):
         super().__init__(timeout=10)
         self.ctx: discord.Interaction = ctx
-        self.bot: SussyBot = bot
+        self.bot: bot = bot
         self.message: Optional[discord.Message] = None
 
     @discord.ui.button(label='refresh', style=discord.ButtonStyle.green)
@@ -220,6 +221,7 @@ class interaction_error_button(discord.ui.View):
             except discord.NotFound:
                 pass
 
+
 class interaction_delete_view(discord.ui.View):
     def __init__(
             self,
@@ -250,3 +252,130 @@ class interaction_delete_view(discord.ui.View):
             except discord.NotFound:
                 pass
 
+
+class reaction_role(discord.ui.View):
+    def __init__(self,bot:bot.SussyBot):
+        super().__init__(
+            timeout=None
+        )
+        self.bot = bot
+
+    @discord.ui.button(label='role1', style=discord.ButtonStyle.green, custom_id='role1')
+    async def role1_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        original_message = interaction.message
+
+        await interaction.response.defer()
+
+        print(self.bot.success_emoji)
+        role_id = await self.bot.db.fetchval(
+            """
+                SELECT role_1 FROM test.rrole WHERE guild_id = $1 AND 
+                message_id = $2
+            """, original_message.guild.id, original_message.id
+        )
+        role = interaction.guild.get_role(role_id)
+
+        if role is None:
+            children = self.children
+            child = discord.utils.get(children, custom_id='role1')
+            self.remove_item(child)
+            await interaction.message.edit(view=self)
+            await interaction.response.send_message(f'sorry something went wrong try again', ephemeral=True)
+            return
+        is_assigned = interaction.user.get_role(role.id)
+        message = 'failed to assign the role'
+
+        try:
+            if is_assigned:
+                await interaction.user.remove_roles(role)
+                message = f'removed {role.name} from you'
+            else:
+                await interaction.user.add_roles(role)
+                message = f'you have assigned the {role.name} Role'
+        except discord.HTTPException or discord.Forbidden:
+            message = 'something went wrong'
+
+        await interaction.followup.send(message, ephemeral=True)
+
+    @discord.ui.button(label='role2', style=discord.ButtonStyle.green, custom_id='role2')
+    async def role2_button(self, interaction: discord.Interaction, button):
+        original_message = await interaction.original_message()
+        role_id = await self.bot.db.fetchval(
+            """
+                SELECT role_2 FROM test.rrole WHERE guild_id = $1 AND 
+                message_id = $2
+            """, original_message.guild.id, original_message.id
+        )
+        role = interaction.guild.get_role(role_id)
+
+        if role is None:
+            children = self.children
+            child = discord.utils.get(children, custom_id='role2')
+            await self.remove_item(child)
+            await interaction.message.edit(view=self)
+            await interaction.response.send_message(f'sorry something went wrong try again', ephemeral=True)
+            return
+        is_assigned = interaction.user.get_role(role.id)
+
+        try:
+            if is_assigned:
+                await interaction.user.remove_roles(role)
+                message = f'removed {role.name} from you'
+            else:
+                await interaction.user.add_roles(role)
+                message = f'you have assigned the {role.name} Role'
+        except discord.HTTPException or discord.Forbidden:
+            message = 'something went wrong'
+
+        await interaction.response.send_message(message, ephemeral=True)
+
+
+    @discord.ui.button(label='role3', style=discord.ButtonStyle.green, custom_id='role3')
+    async def role3_button(self, interaction: discord.Interaction, button):
+        original_message = await interaction.original_message()
+        role_id = await self.bot.db.fetchval(
+            """
+                SELECT role_3 FROM test.rrole WHERE guild_id = $1 AND 
+                message_id = $2
+            """, original_message.guild.id, original_message.id
+        )
+        role = interaction.guild.get_role(role_id)
+
+        if role is None:
+            children = self.children
+            child = discord.utils.get(children, custom_id='role3')
+            await self.remove_item(child)
+            await interaction.message.edit(view=self)
+            await interaction.response.send_message(f'sorry something went wrong try again', ephemeral=True)
+            return
+        is_assigned = interaction.user.get_role(role.id)
+        message = 'failed to assign the role'
+        try:
+            if is_assigned:
+                await interaction.user.remove_roles(role)
+                message = f'removed {role.name} from you'
+            else:
+                await interaction.user.add_roles(role)
+                message = f'you have assigned the {role.name} Role'
+        except discord.HTTPException or discord.Forbidden:
+            message = 'something went wrong'
+
+        await interaction.response.send_message(message, ephemeral=True)
+
+
+class verification(discord.ui.View):
+    def __init__(
+            self,
+            interaction: discord.Interaction,
+            role: discord.Role = None,
+            *,
+            text: str = None
+    ):
+        super().__init__(timeout=180)
+        self.ctx: discord.Interaction = interaction
+        self.text = text
+        self.role = role
+
+    @discord.ui.button(label='verify', style=discord.ButtonStyle.green)
+    async def verify_button(self, interaction: discord.Interaction, button):
+        role = self.role

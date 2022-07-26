@@ -10,6 +10,7 @@ import argparse
 import logging
 import shlex
 import typing
+from discord.ui import Button
 from time import mktime
 from typing import Optional, TYPE_CHECKING
 
@@ -21,7 +22,7 @@ from discord.ext.menus.views import ViewMenuPages
 
 from handler.pagination import SimplePages
 from handler.utils import string_to_delta
-from handler.view import delete_view, userinfo, interaction_delete_view
+from handler.view import delete_view, userinfo, interaction_delete_view, interaction_error_button, reaction_role
 from handler.checks import is_permitted, is_lower_role
 from datetime import timedelta, datetime
 from discord.app_commands import Choice
@@ -41,6 +42,18 @@ class Warningspages(SimplePages):
         converted = entries
         print(entries)
         super().__init__(converted, per_page=per_page, ctx=ctx, title=title)
+
+
+class Point(typing.NamedTuple):
+    x: int
+    y: int
+
+
+class PointTransformer(app_commands.Transformer):
+    @classmethod
+    async def transform(cls, interaction: discord.Interaction, value: str) -> Point:
+        (x, _, y) = value.partition(',')
+        return Point(x=int(x.strip()), y=int(y.strip()))
 
 
 async def bulk_delete_advance(
@@ -87,6 +100,7 @@ class moderation(commands.Cog):
     @app_commands.checks.cooldown(1, 5.0, key=lambda i: (i.guild_id, i.user.id))
     @app_commands.guild_only()
     @app_commands.describe(
+        limit='number of messages to delete from the channel default set to 10',
         contain='delete the message that content given word. separate by comma!',
         startswith='delete the messages that starts with given word. separate by comma',
         user='only delete the message of specific user',
@@ -96,7 +110,7 @@ class moderation(commands.Cog):
         delete_type='If set true, delete only messages matching all conditions',
         hide='hide the response message if set to true'
     )
-    async def clear(self, interaction: discord.Interaction, limit: app_commands.Range[int, 1, 100] = 10,
+    async def clear(self, interaction: discord.Interaction, limit: app_commands.Range[int, 1, 2000] = 10,
                     delete_type: typing.Literal['true', 'false'] = None, *,
                     user: typing.Union[discord.Member, discord.User] = None,
                     contain: str = None, startswith: str = None, endswith: str = None,
@@ -798,23 +812,331 @@ class moderation(commands.Cog):
         view.message = await interaction.original_message()
         return view.message
 
+    @app_commands.command(name='removetimeout', description='remove timeout of a user')
+    @app_commands.guild_only()
+    @app_commands.default_permissions(moderate_members=True)
+    @app_commands.checks.has_permissions(moderate_members=True)
+    @app_commands.checks.bot_has_permissions(moderate_members=True)
+    @app_commands.describe(
+        member='the member who you want to remove timeout',
+        reason='the reason to remove timeout of the member'
+    )
+    async def removetimeout(self, interaction: discord.Interaction, member: discord.Member, *, reason: str = None):
 
+        if not await is_lower_role(interaction, member=member):
+            await utils.error_embed(
+                bot=self.bot,
+                Interaction=interaction,
+                error_name='timeout command error',
+                error_dis="you must have lower role than given member!")
+            return
+        if not member.is_timed_out():
+            await utils.error_embed(
+                Interaction=interaction,
+                bot=self.bot,
+                error_name='timeout command error',
+                error_dis='the member is already not timed out')
+            return
 
+        # defer the interaction
+        await interaction.response.defer()
+        # variables
+        reason_msg = reason if reason else 'no reason'
+        reason = f'[{reason}] - {interaction.user}' if reason else f'[no reason] - {interaction.user}'
+        failed = False
+        try:
+            await member.edit(timed_out_until=None, reason=reason)
+        except discord.HTTPException or discord.Forbidden:
+            failed = True
+        if failed:
+            info_embed = discord.Embed(
+                title=f'``failed to remove timeout``',
+                description=
+                f'{self.bot.right} **user**: {member.mention} \n'
+                f'**timeout until** : <t:{round(int(mktime(member.timed_out_until.timetuple())))}:f> \n'
+                f'``failed?:``{self.bot.success_emoji if failed else self.bot.failed_emoji} \n',
+                colour=self.bot.embed_colour, timestamp=discord.utils.utcnow()
+            ).set_footer(text='\u200b',
+                         icon_url=interaction.user.display_avatar.replace(size=32).url
+                         )
+        else:
+            info_embed = discord.Embed(
+                title=f'``{member.name} timeout has been removed ``',
+                description=
+                f'{self.bot.file_emoji} **reason** : {reason_msg} \n'
+                f'{self.bot.right} **moderator**: {member.mention} \n'
+                f'**timeout was until** : <t:{round(int(mktime(member.timed_out_until.timetuple())))}:f> \n'
+                f'``failed?:``{self.bot.success_emoji if failed else self.bot.failed_emoji} \n',
+                colour=self.bot.embed_colour, timestamp=discord.utils.utcnow()
+            ).set_footer(text='\u200b',
+                         icon_url=interaction.user.display_avatar.replace(size=32).url
+                         )
+        view = interaction_delete_view(interaction)
+        await interaction.followup.send(embed=info_embed, view=view)
+        view.message = await interaction.original_message()
+        return view.message
 
+    role = app_commands.Group(name='role', description='commands related to roles', guild_only=True,
+                              default_permissions=discord.Permissions(manage_roles=True))
 
+    @role.command(name='add', description='easily add roles to a member')
+    @app_commands.checks.has_permissions(manage_roles=True)
+    @app_commands.checks.bot_has_permissions(manage_roles=True)
+    @app_commands.describe(
+        role='the role that you want to add to the user',
+        member='the member that you want to add role to',
+        removeadd='that will remove the all roles before adding to the member if set to true',
+        hide='run the command anonymously 0-0'
+    )
+    async def _role_add(self, interaction: discord.Interaction, role: discord.Role, *, member: discord.Member,
+                        removeadd: typing.Literal['true', 'false'] = None,
+                        hide: typing.Literal['true', 'false'] = None):
+        # checks
+        if not role.position < interaction.guild.me.top_role.position:
+            await utils.error_embed(
+                bot=self.bot,
+                Interaction=interaction,
+                error_name='bot error',
+                error_dis='something sussy happened, i cant assign the roles that is above me')
+            return
+        if role.is_bot_managed() or role.is_integration() or role.is_premium_subscriber():
+            await utils.error_embed(
+                bot=self.bot,
+                Interaction=interaction,
+                error_name='bot error',
+                error_dis='cant assign this role to member, either the role is managed by some type of integration or '
+                          'is '
+                          'a booster role')
+            return
+        if not member.top_role.position < interaction.guild.me.top_role.position:
+            await utils.error_embed(
+                bot=self.bot,
+                Interaction=interaction,
+                error_name='bot error',
+                error_dis="something sussy happened, i cant assign the roles to the member who's top role is above me")
+            return
+        if member.id == interaction.user.id and not member.id == interaction.guild.owner.id:
+            await utils.error_embed(
+                bot=self.bot,
+                Interaction=interaction,
+                error_name='role command error',
+                error_dis='you cant add roles to your self.')
+            return
+        if not await is_lower_role(interaction, member):
+            await utils.error_embed(
+                bot=self.bot,
+                Interaction=interaction,
+                error_name='role command error',
+                error_dis="lmao fail, you cant add the roles to a member who's role is above you"
+            )
+            return
 
+        # send the interaction message
 
+        await interaction.response.defer(thinking=True, ephemeral=True if hide == 'true' else False)
 
+        # variables
 
+        failed = False
+        removeadd = True if removeadd == 'true' else False
+        reason = f"operation done by - {interaction.user} command: /add-role"
 
+        try:
+            if removeadd:
+                await member.edit(roles=[role], reason=reason)
+            else:
+                await member.add_roles(role, reason=reason, atomic=False)
+        except discord.HTTPException or discord.Forbidden:
+            error_emed = discord.Embed(
+                title=f"{self.bot.right} failed to add role to __{member.name}__",
+                description='>>> reason: something went wrong'
+            )
+            error_emed.add_field(
+                name='details',
+                value=f'>>> {self.bot.moderator_emoji} **Moderator:** {interaction.user.mention} \n'
+                      f'**member:** {member.mention} \n'
+                      f'**role:** {role.mention}'
 
+            )
+            view = None
+            if hide == 'true':
+                view = interaction_error_button(interaction)
+                linkbutton = Button(url="https://sussybot.xyz", label="support", style=discord.ButtonStyle.url)
+                view.add_item(linkbutton)
+            await interaction.followup.send(embed=error_emed, view=view)
 
-    @commands.command(name='leave')
-    @commands.guild_only()
-    @commands.has_permissions(administrator=True)
-    async def leave(self, ctx: Context):
-        guild = ctx.guild
-        await guild.leave()
+            view.message = await interaction.original_message()
+            return view.message
+
+        role_info_embed = discord.Embed(title='``role update``')
+        role_info_embed.add_field(
+            name=f'{self.bot.right} added role to __{member.name}__',
+            value=f'>>> {self.bot.moderator_emoji} **Moderator :** {interaction.user.mention} \n'
+                  f'**member :** {member.mention} \n'
+                  f'role: {role.mention}',
+            inline=False
+        )
+        role_info_embed.add_field(
+            name=f'details',
+            value=f'>>> removed previous role : ``{removeadd}``',
+            inline=False
+        )
+        if hide == 'true':
+            await interaction.followup.send(embed=role_info_embed)
+            return
+        else:
+            view = interaction_delete_view(interaction)
+            await interaction.followup.send(embed=role_info_embed, view=view)
+            view.message = await interaction.original_message()
+            return view.message
+
+    @role.command(name='remove', description='easily remove the roles from a user')
+    @app_commands.checks.has_permissions(manage_roles=True)
+    @app_commands.checks.bot_has_permissions(manage_roles=True)
+    @app_commands.describe(
+        role='the role you want to remove from the member',
+        member='member that you want to remove the role from',
+        remove_all='remove all roles from the member',
+        hide=' hide interaction response message if set to true'
+    )
+    async def _role_remove(self, interaction: discord.Interaction,
+                           role: discord.Role, member: discord.Member,
+                           remove_all: typing.Literal['true', 'false'] = None,
+                           hide: typing.Literal['true', 'false'] = None
+                           ):
+        if not role.position < interaction.guild.me.top_role.position:
+            await utils.error_embed(
+                bot=self.bot,
+                Interaction=interaction,
+                error_name='bot error',
+                error_dis='something sussy happened, i cant remove the roles that is above me')
+            return
+        if role.is_bot_managed() or role.is_integration() or role.is_premium_subscriber():
+            await utils.error_embed(
+                bot=self.bot,
+                Interaction=interaction,
+                error_name='bot error',
+                error_dis='cant remove this role to member, either the role is managed by some type of integration or '
+                          'is '
+                          'a booster role')
+            return
+        if not member.top_role.position < interaction.guild.me.top_role.position:
+            await utils.error_embed(
+                bot=self.bot,
+                Interaction=interaction,
+                error_name='bot error',
+                error_dis="something sussy happened, i cant remove the roles to the member whose top role is above me")
+            return
+        if member.id == interaction.user.id and not member.id == interaction.guild.owner.id:
+            await utils.error_embed(
+                bot=self.bot,
+                Interaction=interaction,
+                error_name='role command error',
+                error_dis='you cant remove roles to your self.')
+            return
+        if not await is_lower_role(interaction, member):
+            await utils.error_embed(
+                bot=self.bot,
+                Interaction=interaction,
+                error_name='role command error',
+                error_dis="lmao fail, you cant remove roles to a member who's role is above you"
+            )
+            return
+        if not member.get_role(role.id) and not remove_all == 'true':
+            await utils.error_embed(
+                bot=self.bot,
+                Interaction=interaction,
+                error_name='role command error',
+                error_dis=f"bruh this guy doesnt have {role.mention} role"
+            )
+            return
+        # send interaction defer message
+        await interaction.response.defer(thinking=False)
+
+        # variable
+        failed = False
+        removeall = True if remove_all == 'true' else False
+        reason = f' operation by :{interaction.user} command:/ role remove'
+
+        if removeall:
+            try:
+                await member.edit(roles=[], reason=reason)
+            except discord.HTTPException or discord.Forbidden:
+                failed = True
+        else:
+            try:
+                await member.remove_roles(role, reason=reason, atomic=False)
+            except:
+                failed = True
+
+        if failed:
+            error_emed = discord.Embed(
+                title=f"{self.bot.right} failed to remove role from __{member.name}__",
+                description='>>> reason: something went wrong'
+            )
+            error_emed.add_field(
+                name='details',
+                value=f'>>> {self.bot.moderator_emoji} **Moderator:** {interaction.user.mention} \n'
+                      f'**member:** {member.mention} \n'
+                      f'**role:** {role if removeall else "all"}'
+
+            )
+
+            view = interaction_error_button(interaction)
+            linkbutton = Button(url="https://sussybot.xyz", label="support", style=discord.ButtonStyle.url)
+            view.add_item(linkbutton)
+            await interaction.followup.send(embed=error_emed, view=view)
+            view.message = await interaction.original_message()
+            return view.message
+        else:
+            role_info_embed = discord.Embed(title='``role update``')
+            role_info_embed.add_field(
+                name=f'{self.bot.right} remove role from __{member.name}__',
+                value=f'>>> {self.bot.moderator_emoji} **Moderator :** {interaction.user.mention} \n'
+                      f'**member :** {member.mention} \n'
+                      f'role: {role.mention}',
+                inline=False
+            )
+            role_info_embed.add_field(
+                name=f'details',
+                value=f'>>> removed all role : ``{"true" if removeall == "true" else "false"}``',
+                inline=False
+            )
+
+            if hide == 'true':
+                await interaction.followup.send(embed=role_info_embed)
+                return
+            else:
+                view = interaction_delete_view(interaction)
+                await interaction.followup.send(embed=role_info_embed, view=view)
+                view.message = await interaction.original_message()
+                return view.message
+
+    @role.command(name='mass-add')
+    async def _role_massadd(self, interaction: discord.Interaction):
+        await interaction.response.defer()
+        await interaction.followup.send('hello2')
+
+    @role.command(name='mass-remove')
+    async def _role_mass_remove(self, interaction: discord.Interaction):
+        await interaction.response.defer()
+        await interaction.followup.send('hello3')
+
+    @app_commands.command(name='rs')
+    @app_commands.guild_only()
+    async def reactions_role(
+            self, interaction: discord.Interaction, role1: discord.Role, role2: discord.Role,
+            role3: discord.Role = None, role4: discord.Role = None, *, role5: discord.Role = None,
+            role6: discord.Role = None, role_menu_name: str = None,text:str=None
+    ):
+        await interaction.response.defer()
+        messahe = await interaction.original_message()
+        await self.bot.db.execute(
+            """SELECT * FROM test.rolefunc($1,$2,$3,$4,$5,$6,$7,$8)""",
+            interaction.guild.id, messahe.id, role1.id, role2.id, role3.id, role4.id, role5.id, role6.id
+        )
+        view = reaction_role(self.bot)
+        await interaction.followup.send(text,view=view)
 
 
 async def setup(bot: SussyBot) -> None:

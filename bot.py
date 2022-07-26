@@ -9,7 +9,7 @@ that start the bot and connect to discord.
 __title__ = 'Sussy-bot'
 __author__ = 'xgreenapple'
 __copyright__ = 'Copyright xgreenapple'
-__version__ = '0.0.1a'
+__version__ = '0.0.2a'
 
 import logging
 import os
@@ -21,6 +21,7 @@ from collections import Counter
 
 import aiohttp
 import discord
+from typing import TYPE_CHECKING
 import certifi
 import ssl
 import dotenv
@@ -30,13 +31,12 @@ import contextlib
 from glob import glob
 from itertools import cycle
 
-from handler.Context import Context
+from handler import view
+from handler import Context
 from handler.database import create_database_pool
+
 from platform import python_version
 from discord.ext import commands, tasks
-from datetime import timedelta
-from discord import http, gateway, client
-from discord.client import Client
 from pympler.tracker import SummaryTracker
 
 """this is the main file that run the bot"""
@@ -57,7 +57,7 @@ print(
 
 # class bot the main code
 class SussyBot(commands.Bot):
-    """Sussy-bot v0.1.9 Interface
+    """Sussy-bot v0.0.2a Interface
     """
 
     user: discord.ClientUser
@@ -71,7 +71,7 @@ class SussyBot(commands.Bot):
         allowed_mentions = discord.AllowedMentions(roles=True, everyone=False, users=True)
         self.ready = False
         self.statues = cycle(
-            ["Technoblade never dies", "so long, blood god", 'long live the blood god', 'rest in peace king'])
+            ["sus", "when the imposter is sus", 'Sussy baka', '/help'])
         super().__init__(
             command_prefix=self.get_command_prefix,
             case_insensitive=True,
@@ -129,6 +129,7 @@ class SussyBot(commands.Bot):
         self.success_emoji = '<:icons8ok100:975326724747304992>'
         self.right = '<:icons8chevronright100:975326725158346774>'
         self.file_emoji = '<:icons8document100:975326725229641781>'
+        self.moderator_emoji = "<:icons8protect100:975326725502296104>"
 
         # DATABASE variables
         self.db = self.database = self.database_connection_pool = None
@@ -146,16 +147,19 @@ class SussyBot(commands.Bot):
         self.console_log("setting up database")
         await self.initialize_database()
         self.console_log("database setup done")
+
         self.loop.create_task(
             self.startup_tasks(), name="Bot startup tasks"
         )
-        COGS = ["error handler", 'moderation', 'test','member']
+        COGS = ["error handler", 'moderation', 'test', 'member']
         self.console_log("loading cogs..")
+        self.add_view(view=view.reaction_role(self))
         for cog in COGS:
             await self.load_extension(f"cogs.{cog}")
             self.console_log(f"{cog} loaded ")
-        # await self.tree.sync()
-        # self.tree.copy_global_to(guild=discord.Object(self.support_guild))
+
+        self.tree.copy_global_to(guild=discord.Object(self.support_guild))
+        await self.tree.sync(guild=discord.Object(self.support_guild))
         self.console_log("setup hook complete")
 
     # connect to database execute on setup hook, inspired by harmon bot
@@ -177,6 +181,21 @@ class SussyBot(commands.Bot):
         await self.db.execute("CREATE SCHEMA IF NOT EXISTS test")
         await self.db.execute(
             """
+            CREATE TABLE IF NOT EXISTS test.rrole(
+                id                 SERIAL,
+                guild_id           BIGINT NOT NULL,
+                role_1             BIGINT,
+                role_2             BIGINT,
+                role_3             BIGINT,
+                role_4             BIGINT,
+                role_5             BIGINT,
+                role_6             BIGINT,
+                FOREIGN KEY (guild_id) REFERENCES test.guilds(id) ON DELETE CASCADE ON UPDATE CASCADE
+            )
+            """
+        )
+        await self.db.execute(
+            """
             CREATE TABLE IF NOT EXISTS test.messagecount(
                guild_id         BIGINT,
                user_id          BIGINT,
@@ -187,32 +206,7 @@ class SussyBot(commands.Bot):
             """
         )
 
-        # await self.db.execute("CREATE SCHEMA IF NOT EXISTS chat")
-        # await self.db.execute("CREATE SCHEMA IF NOT EXISTS commands")
         await self.db.execute("CREATE SCHEMA IF NOT EXISTS guilds")
-        # await self.db.execute("CREATE SCHEMA IF NOT EXISTS direct_messages")
-        # await self.db.execute("CREATE SCHEMA IF NOT EXISTS test")
-        # await self.db.execute("CREATE SCHEMA IF NOT EXISTS moderation")
-        # await self.db.execute(
-        #     """
-        #     CREATE TABLE IF NOT EXISTS chat.messagecount(
-        #        guild_id         BIGINT,
-        #        user_id          BIGINT,
-        #        message          INT,
-        #        PRIMARY KEY		(guild_id, user_id)
-        #
-        #     )
-        #     """
-        # )
-        # await self.db.execute(
-        #     """
-        #     CREATE TABLE IF NOT EXISTS guilds.welcome_message (
-        #         guild_id		BIGINT PRIMARY KEY,
-        #         channel_id      BIGINT,
-        #         message		    Text
-        #     )
-        #     """
-        # )
         await self.db.execute(
             """
             CREATE TABLE IF NOT EXISTS guilds.prefixes (
@@ -281,42 +275,33 @@ class SussyBot(commands.Bot):
                     END $$ LANGUAGE plpgsql;
 
                     """)
-        # await self.db.execute(
-        #     """
-        #     CREATE TABLE IF NOT EXISTS guilds.blacklist (
-        #         guild_id        BIGINT PRIMARY KEY
-        #     )
-        #     """
-        # )
-        # await self.db.execute(
-        #     """
-        #     CREATE TABLE IF NOT EXISTS moderation.warns (
-        #         guild_id         BIGINT,
-        #         user_id          BIGINT,
-        #         datetime       TIMESTAMP,
-        #         warn             TEXT[],
-        #         totalwarn        BIGINT,
-        #         PRIMARY KEY		 (guild_id, user_id)
-        #     )
-        #     """
-        # )
-        # await self.db.execute(
-        #     """
-        #     CREATE TABLE IF NOT EXISTS guilds.checks (
-        #         guild_id        BIGINT PRIMARY KEY,
-        #         name            TEXT,
-        #         settings        BOOL
-        #     )
-        #     """
-        # )
-        # await self.db.execute(
-        #     """
-        #     CREATE TABLE IF NOT EXISTS test.datetime (
-        #         user_id        BIGINT PRIMARY KEY,
-        #         datetime       TIMESTAMP
-        #     )
-        #     """
-        # )
+        await self.db.execute(
+            """
+            CREATE OR REPLACE FUNCTION test.rolefunc(BIGINT,BIGINT,BIGINT,BIGINT,BIGINT,BIGINT,BIGINT,BIGINT) RETURNS integer
+                    AS $$
+                        DECLARE guild_id1 BIGINT = $1;
+                        DECLARE message_id1 BIGINT = $2;
+                        DECLARE role1 BIGINT = $3;
+                        DECLARE role2 BIGINT = $4;
+                        DECLARE role3 BIGINT = $5;
+                        DECLARE role4 BIGINT = $6;
+                        DECLARE role5 BIGINT = $7;
+                        DECLARE role6 BIGINT = $8;
+                        DECLARE rs_id BIGINT;
+                    BEGIN
+                        IF EXISTS(SELECT * FROM test.guilds WHERE id = guild_id1) THEN
+                            INSERT INTO test.rrole(guild_id,message_id,role_1,role_2,role_3,role_4,role_5,role_6)
+                            VALUES(guild_id1,message_id1,role1,role2,role3,role4,role5,role6) RETURNING id INTO rs_id;
+                        ELSE
+                            INSERT INTO test.guilds(id)
+                            VALUES(guild_id1) ON CONFLICT DO NOTHING;
+                            INSERT INTO test.rrole(guild_id,message_id,role_1,role_2,role_3,role_4,role_5,role_6)
+                            VALUES(guild_id1,message_id1,role1,role2,role3,role4,role5,role6) RETURNING id INTO rs_id;
+                    END IF;
+                    RETURN rs_id;
+                    END $$ LANGUAGE plpgsql;
+            """
+        )
 
     def console_log(self, message):
         print(f"[{datetime.datetime.now().strftime(r'%D %I:%M %p')}] > {self.user} > {message}")
@@ -449,7 +434,7 @@ class SussyBot(commands.Bot):
         # Close database connection
         await self.database_connection_pool.close()
 
-    async def get_context(self, message, /, *, cls=Context) -> Context:
+    async def get_context(self, message, /, *, cls=Context.Context) -> Context.Context:
         ctx = await super().get_context(message, cls=cls)
         return ctx
 
@@ -537,4 +522,4 @@ class SussyBot(commands.Bot):
 token = os.environ.get('BETATOKEN')
 application_id = os.environ.get('BETA_APPLICATION_ID')
 tracker.print_diff()
-print("")
+

@@ -36,6 +36,7 @@ async def create_database_pool():
         user="postgres",
         password=password,
         database="sussydb",
+        min_size=1,
         host=host,
         init=initialize_database_connection
     )

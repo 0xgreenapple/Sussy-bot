@@ -12,8 +12,7 @@ if TYPE_CHECKING:
     from handler.Context import Context
 
 
-
-class RoboPages(discord.ui.View):
+class Sussypages(discord.ui.View):
     def __init__(
             self,
             source: menus.PageSource,
@@ -22,7 +21,7 @@ class RoboPages(discord.ui.View):
             check_embeds: bool = True,
             compact: bool = False,
     ):
-        super().__init__()
+        super().__init__(timeout=None)
         self.source: menus.PageSource = source
         self.check_embeds: bool = check_embeds
         self.ctx: discord.Interaction = ctx
@@ -211,7 +210,7 @@ class SimplePageSource(menus.ListPageSource):
 
         for i in pages:
             print(i)
-            for key,value in i:
+            for key, value in i:
                 menu.embed.add_field(name=f'#{key}', value=f'{value}', inline=False)
 
         return menu.embed
@@ -237,7 +236,7 @@ class warnPageSource(menus.ListPageSource):
         return menu.embed
 
 
-class SimplePages(RoboPages):
+class SimplePages(Sussypages):
     """A simple pagination session reminiscent of the old Pages interface.
     Basically an embed with some normal formatting.
     """

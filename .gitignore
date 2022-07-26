@@ -159,3 +159,6 @@ main.sqlite
 *.gif
 *.DS_Store
 .idea
+data
+data/
+*.json
